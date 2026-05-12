@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+backend/.venv/
+backend/auth.db
+dev-server.log
+dev-server.err
