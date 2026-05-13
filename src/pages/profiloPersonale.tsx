@@ -1,8 +1,10 @@
 // Esporta il componente principale della pagina profilo
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Search, ArrowLeft } from "lucide-react";
 export default function profiloPersonale() {
+    const [isModified, setIsModified] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
+    const [skillType, setSkillType] = useState("offerte");
   // Array delle skill offerte dall'utente
   // Ogni skill ha:
   // - name = nome della skill
@@ -49,6 +51,9 @@ export default function profiloPersonale() {
         Avanzato: "bg-green-100 text-green-800",
     };
 
+    const currentSkills =
+    skillType === "offerte" ? skillsOfferte : searchedSkills;
+
   // JSX della pagina
   return (
     // Contenitore principale
@@ -91,6 +96,7 @@ export default function profiloPersonale() {
                         </h2>
                         {/* Textarea bio */}
                         <textarea
+                            onChange={() => setIsModified(true)}
                             placeholder="Scrivi una breve bio..."
                             className="
                                 w-full
@@ -110,30 +116,61 @@ export default function profiloPersonale() {
                         />
                     </div>
                     {/* Pulsante salva profilo */}
-                    <button className="
-                        mt-5
-                        w-full
-                        bg-black 
-                        text-orange-500 
-                        border-2 
-                        border-orange-500 
-                        py-3 
-                        rounded-2xl 
-                        font-bold 
-                        hover:bg-orange-500 
-                        hover:text-black 
-                        transition-all
-                    ">
-                        Salva Profilo
-                    </button>
+                    {isModified ? (
+                        <button
+                            className="
+                                mt-5
+                                w-full
+                                bg-black
+                                text-orange-500
+                                border-2
+                                border-orange-500
+                                py-3
+                                rounded-2xl
+                                font-bold
+                                hover:bg-orange-500
+                                hover:text-black
+                                transition-all
+                            "
+                        >
+                            Salva Profilo
+                        </button>
+
+                    ) : (
+
+                        <button
+                            onClick={() => window.history.back()}
+                            className="
+                                mt-5
+                                w-full
+                                flex
+                                items-center
+                                justify-center
+                                gap-2
+                                bg-black
+                                text-orange-500
+                                border-2
+                                border-orange-500
+                                py-3
+                                rounded-2xl
+                                font-bold
+                                hover:bg-orange-500
+                                hover:text-black
+                                transition-all
+                            "
+                        >
+                            <ArrowLeft size={20} />
+                            Indietro
+                        </button>
+                    )}
                 </div>
             </div>
-
             {/* ========================= */}
             {/* SEZIONE SKILL */}
             {/* ========================= */}
-            <div className="lg:col-span-2 space-y-6">
-                <div className="relative mb-5">
+            <div className="lg:col-span-2 space-y-4">
+                <br />
+                <div className="relative mb-1">
                     <input
                         type="text"
                         placeholder="Cerca skill..."
@@ -154,15 +191,14 @@ export default function profiloPersonale() {
                     />  
                     <div className="absolute right-3 top-1/3 -translate-y-1/2 flex items-center gap-2">
                         <label className="flex items-center gap-1 text-[20] text-orange-500">
-                            <input type="checkbox" className="accent-orange-500" />
+                            <input type="radio" name="skillType" checked={skillType === "offerte"} onChange={() => setSkillType("offerte")}  className="accent-orange-500"/>
                             Offerte
                         </label>
                         <label className="flex items-center gap-1 text-[20] text-orange-500">
-                            <input type="checkbox" className="accent-orange-500" />
+                            <input type="radio" name="skillType" checked={skillType === "cercate"} onChange={() => setSkillType("cercate")} className="accent-orange-500" />
                             Cercate
                         </label>
                         <Search size={20} className="text-orange-500" />
-
                     </div> 
                 </div>
                 {/* SKILL OFFERTE */}
@@ -173,7 +209,7 @@ export default function profiloPersonale() {
                             <p className="text-zinc-500 text-sm">Competenze che puoi offrire</p>
                         </div>
                         <button
-                            onClick={() => setShowPopup(true)} 
+                            onClick={() => {setShowPopup(true); setIsModified(true)}}
                             className="bg-orange-500 text-black px-5 py-2 rounded-xl font-bold hover:bg-orange-600 transition">
                             + Aggiungi
                         </button>
@@ -201,7 +237,7 @@ export default function profiloPersonale() {
                             <p className="text-zinc-500 text-sm">Competenze che vuoi imparare</p>
                         </div>
                         <button
-                            onClick={() => setShowPopup(true)} 
+                            onClick={() => {setShowPopup(true); setIsModified(true)}}
                             className="bg-orange-500 text-black px-5 py-2 rounded-xl font-bold hover:bg-orange-600 transition">
                             + Aggiungi
                         </button>

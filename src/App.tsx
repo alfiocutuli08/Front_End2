@@ -1,12 +1,19 @@
-import { BrowserRouter } from "react-router";
+import { BrowserRouter, Route, Routes } from "react-router";
 import SkillProfilePage from "./pages/profiloPersonale";
+import ProfiloPubblico from "./pages/profiloPubblico";
 import './App.css'
 
 function App() {
   return (
     <>
        <BrowserRouter>
-          <SkillProfilePage />
+        <Routes>
+          <Route path="profile">
+            <Route index element={<SkillProfilePage />} />
+            <Route path="public" element={<ProfiloPubblico />} />
+          </Route>
+          <Route path="/" element={<ProfiloPubblico />} />
+        </Routes>
       </BrowserRouter>
     </>
   );
