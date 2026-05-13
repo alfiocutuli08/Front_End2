@@ -1,19 +1,14 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import { BrowserRouter, Route, Routes } from "react-router";
 import "./App.css";
-import Login from "./component/login";
-import Register from "./component/register";
-import { DashboardPage } from "./pages/DashboardPage";
+import { CardPrincipalePage } from "./pages/CardPrincipalePage";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/" element={<CardPrincipalePage />} />
       </Routes>
-      </BrowserRouter>
+    </BrowserRouter>
   );
 }
 
