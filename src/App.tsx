@@ -1,15 +1,15 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import { LoginPage } from "@/pages/LoginPage";
-import { RegisterPage } from "@/pages/RegisterPage";
-import { DashboardPage } from "@/pages/DashboardPage";
+import { BrowserRouter } from "react-router";
+import SkillProfilePage from "./pages/profiloPersonale";
+import './App.css'
 
-export default function App() {
+function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
-    </Routes>
+    <>
+       <BrowserRouter>
+          <SkillProfilePage />
+      </BrowserRouter>
+    </>
   );
 }
+
+export default App
