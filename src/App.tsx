@@ -1,6 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router";
 import { AuthProvider } from "./lib/AuthContext";
-import { ProtectedRoute } from "./lib/ProtectedRoute";
 import SkillProfilePage from "./pages/profiloPersonale";
 import ProfiloPubblico from "./pages/profiloPubblico";
 import { LoginPage } from "./pages/LoginPage";
@@ -8,7 +7,8 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { PaginaRicercaPage } from "./pages/PaginaRicercaPage";
 import { CardPrincipalePage } from "./pages/CardPrincipalePage";
 import HomePages from "./pages/HomePages";
-import Richieste from "./pages/pagineRichieste";
+import Richieste from "./pages/richieste";
+import Impostazioni from "./pages/impostazioni";
 import './App.css'
 
 function App() {
@@ -24,7 +24,8 @@ function App() {
             <Route path="register" element={<RegisterPage />} />
             <Route path="search" element={<PaginaRicercaPage />} />
             <Route path="card" element={<CardPrincipalePage />} />
-            <Route path="richieste" element={<ProtectedRoute><Richieste /></ProtectedRoute>} />
+            <Route path="richieste" element={<Richieste />} />
+            <Route path="impostazioni" element={<Impostazioni />} />
           </Route>
         </Routes>
       </BrowserRouter>

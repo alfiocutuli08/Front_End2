@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, MapPin, Star } from "lucide-react";
+import { ArrowLeft, MapPin, Search, Star } from "lucide-react";
 import { requestService, userService, feedbackService, blockService, reportService } from "@/lib/services";
 import type { UserProfile, Feedback } from "@/lib/types";
 
@@ -93,6 +93,14 @@ export default function ProfiloPubblico() {
   return (
     <div className="min-h-screen bg-black p-6 flex justify-center text-white">
       <div className="w-full max-w-4xl space-y-6">
+
+        <button
+          onClick={() => window.history.back()}
+          className="flex items-center gap-2 text-zinc-400 hover:text-orange-400 transition-colors text-sm"
+        >
+          <ArrowLeft size={18} />
+          Indietro
+        </button>
 
         {/* HEADER */}
         <div className="bg-zinc-950 rounded-3xl border border-orange-500 p-6 shadow-[0_0_20px_rgba(249,115,22,0.15)]">

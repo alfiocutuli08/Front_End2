@@ -140,6 +140,7 @@ export default function profiloPersonale() {
 
            {/* SEZIONE SKILL */}
            <div className="lg:col-span-2 space-y-4">
+            <br />
              {/* RICERCA E FILTRI */}
               <div className="relative">
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-500" />

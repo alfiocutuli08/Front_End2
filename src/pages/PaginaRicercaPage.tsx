@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  ChevronDown,
+  ArrowLeft,
   ChevronRight,
   FolderOpen,
   MapPin,
@@ -10,72 +10,100 @@ import {
   Wrench,
 } from "lucide-react";
 import { useNavigate } from "react-router";
+import { useAuth } from "@/lib/AuthContext";
+import { searchService } from "@/lib/services";
+import type { Match } from "@/lib/types";
 
-const profiles = [
+const fallbackProfiles: (Match & { description?: string })[] = [
   {
+    id: 1,
     name: "Luca Bianchi",
+    email: "luca@test.it",
     location: "Milano, Italia",
     description:
       "Sviluppatore Frontend con esperienza in React e Next.js. Appassionato di UI/UX e design system.",
-    offers: ["React", "TypeScript", "Next.js"],
-    seeks: ["Node.js", "Docker"],
+    offerte: ["React", "TypeScript", "Next.js"],
+    cercate: ["Node.js", "Docker"],
+    level: "Avanzato",
   },
   {
+    id: 2,
     name: "Giulia Verdi",
+    email: "giulia@test.it",
     location: "Roma, Italia",
     description:
       "Designer con focus su UI/UX e design thinking. Mi piace creare esperienze utente chiare e utili.",
-    offers: ["UI Design", "Figma", "Prototipazione"],
-    seeks: ["React", "JavaScript"],
+    offerte: ["UI Design", "Figma", "Prototipazione"],
+    cercate: ["React", "JavaScript"],
+    level: "Intermedio",
   },
   {
+    id: 3,
     name: "Alessandro Neri",
+    email: "alex@test.it",
     location: "Torino, Italia",
     description:
       "Backend developer orientato a prodotti solidi e API ben strutturate. Interesse forte per stack cloud.",
-    offers: ["Python", "Django", "SQL"],
-    seeks: ["DevOps", "AWS"],
+    offerte: ["Python", "Django", "SQL"],
+    cercate: ["DevOps", "AWS"],
+    level: "Avanzato",
   },
 ];
 
 const menuItems = [
-  { label: "Ricerca", icon: Search, active: true },
-  { label: "Richieste", icon: FolderOpen, active: false },
-  { label: "Profilo", icon: User, active: false },
-  { label: "Impostazioni", icon: Settings, active: false },
+  { label: "Ricerca", icon: Search, active: true, path: "/search" },
+  { label: "Richieste", icon: FolderOpen, active: false, path: "/richieste" },
+  { label: "Profilo", icon: User, active: false, path: "/profile" },
+  { label: "Impostazioni", icon: Settings, active: false, path: "/impostazioni" },
 ];
 
 export function PaginaRicercaPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [showOfferedSkills, setShowOfferedSkills] = useState(true);
   const [showSoughtSkills, setShowSoughtSkills] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [levelFilter, setLevelFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [profiles, setProfiles] = useState<(Match & { level?: string; description?: string })[]>(fallbackProfiles);
+
+  useEffect(() => {
+    searchService.getMatches()
+      .then(({ data }) => setProfiles(data.length > 0 ? data : fallbackProfiles))
+      .catch(() => setProfiles(fallbackProfiles));
+  }, []);
 
   const filteredProfiles = profiles.filter(profile => {
-    // Check if profile matches search query
-    const matchesSearch = profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         profile.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         profile.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         profile.offers.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                         profile.seeks.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = !q ||
+      profile.name?.toLowerCase().includes(q) ||
+      profile.location?.toLowerCase().includes(q) ||
+      profile.description?.toLowerCase().includes(q) ||
+      profile.offerte?.some(s => s.toLowerCase().includes(q)) ||
+      profile.cercate?.some(s => s.toLowerCase().includes(q));
 
-    // Check if profile matches skill filters
-    const matchesOfferedSkills = showOfferedSkills && profile.offers.length > 0;
-    const matchesSoughtSkills = showSoughtSkills && profile.seeks.length > 0;
-    
-    // If both skill filters are active, show profiles that have at least one type
+    const offers = profile.offerte ?? [];
+    const seeks = profile.cercate ?? [];
+    const matchesOfferedSkills = showOfferedSkills && offers.length > 0;
+    const matchesSoughtSkills = showSoughtSkills && seeks.length > 0;
+
+    const matchesLevel = !levelFilter || profile.level === levelFilter;
+
+    const matchesCategory = !categoryFilter ||
+      (categoryFilter === "offer" && offers.length > 0) ||
+      (categoryFilter === "search" && seeks.length > 0);
+
+    if (!matchesLevel || !matchesCategory) return false;
+
     if (showOfferedSkills && showSoughtSkills) {
       return matchesSearch && (matchesOfferedSkills || matchesSoughtSkills);
     }
-    // If only offered skills filter is active
     if (showOfferedSkills && !showSoughtSkills) {
       return matchesSearch && matchesOfferedSkills;
     }
-    // If only sought skills filter is active
     if (!showOfferedSkills && showSoughtSkills) {
       return matchesSearch && matchesSoughtSkills;
     }
-    // If neither filter is active, show all profiles that match search
     return matchesSearch;
   });
 
@@ -99,10 +127,11 @@ export function PaginaRicercaPage() {
 
           <nav className="flex-1 px-3 py-4">
             <div className="space-y-2">
-              {menuItems.map(({ label, icon: Icon, active }) => (
+              {menuItems.map(({ label, icon: Icon, active, path }) => (
                 <button
                   key={label}
                   type="button"
+                  onClick={() => navigate(path)}
                   className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm transition-colors ${
                     active
                       ? "border border-orange-500/25 bg-orange-500/10 text-orange-300"
@@ -114,20 +143,41 @@ export function PaginaRicercaPage() {
                 </button>
               ))}
             </div>
+            <button
+              onClick={() => navigate("/")}
+              className="mt-4 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100 transition-colors"
+            >
+              <ArrowLeft size={18} />
+              <span className="font-medium">Indietro</span>
+            </button>
           </nav>
 
           <div className="border-t border-zinc-900 p-4">
-            <div className="flex items-center gap-3 rounded-2xl bg-zinc-950 px-3 py-3">
-              <img
-                src="https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg"
-                alt="Mario Rossi"
-                className="h-10 w-10 rounded-full object-cover"
-              />
-              <div className="min-w-0 text-left">
-                <div className="truncate text-sm font-medium text-white">Mario Rossi</div>
-                <div className="text-xs text-zinc-500">Profilo attivo</div>
-              </div>
-            </div>
+            {user ? (
+              <button
+                type="button"
+                onClick={() => navigate("/profile")}
+                className="flex w-full items-center gap-3 rounded-2xl bg-zinc-950 px-3 py-3 hover:bg-zinc-900 transition-colors"
+              >
+                <img
+                  src={user.image_url || "https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg"}
+                  alt={user.name}
+                  className="h-10 w-10 rounded-full object-cover"
+                />
+                <div className="min-w-0 text-left">
+                  <div className="truncate text-sm font-medium text-white">{user.name}</div>
+                  <div className="text-xs text-zinc-500">Profilo attivo</div>
+                </div>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-3 py-3 hover:bg-zinc-900 transition-colors text-orange-400 text-sm font-medium"
+              >
+                Accedi / Registrati
+              </button>
+            )}
           </div>
         </aside>
 
@@ -142,11 +192,13 @@ export function PaginaRicercaPage() {
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
                   <input
                     type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Cerca per nome, skill o parola chiave..."
                     className="h-13 w-full rounded-2xl border border-zinc-800 bg-[#17181b] pl-12 pr-4 text-sm text-white outline-none ring-0 placeholder:text-zinc-500 focus:border-orange-500/60"
                   />
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <button
                     type="button"
                     aria-pressed={showOfferedSkills}
@@ -189,20 +241,39 @@ export function PaginaRicercaPage() {
                     </span>
                     Skill cercate
                   </button>
+                  <select
+                    value={levelFilter}
+                    onChange={(e) => setLevelFilter(e.target.value)}
+                    className="h-9 rounded-xl border border-zinc-800 bg-[#17181b] px-3 text-xs font-medium text-zinc-400 outline-none focus:border-orange-500/60"
+                  >
+                    <option value="">Tutti i livelli</option>
+                    <option value="Principiante">Principiante</option>
+                    <option value="Intermedio">Intermedio</option>
+                    <option value="Avanzato">Avanzato</option>
+                  </select>
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="h-9 rounded-xl border border-zinc-800 bg-[#17181b] px-3 text-xs font-medium text-zinc-400 outline-none focus:border-orange-500/60"
+                  >
+                    <option value="">Tutte le categorie</option>
+                    <option value="offer">Skill offerte</option>
+                    <option value="search">Skill cercate</option>
+                  </select>
                 </div>
               </div>
 
             <div className="mt-5 text-left text-sm text-zinc-500">Risultati trovati: {filteredProfiles.length}</div>
 
-            <div className="mt-5 space-y-4">
-              {profiles.map((profile) => (
+             <div className="mt-5 space-y-4">
+              {filteredProfiles.map((profile) => (
                 <article
                   key={profile.name}
                   className="grid gap-4 rounded-[24px] border border-zinc-800 bg-[#17181b] p-4 transition-colors hover:border-orange-500/30 sm:grid-cols-[1.6fr_1fr_auto] sm:p-5"
                 >
                   <div className="flex gap-4">
                     <img
-                      src="https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg"
+                      src={profile.image_url || "https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg"}
                       alt={profile.name}
                       className="h-18 w-18 shrink-0 rounded-full object-cover"
                     />
@@ -214,6 +285,11 @@ export function PaginaRicercaPage() {
                         <MapPin className="h-4 w-4" />
                         <span>{profile.location}</span>
                       </div>
+                      {profile.level && (
+                        <span className="mt-2 inline-block text-xs px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/20">
+                          {profile.level}
+                        </span>
+                      )}
                       <p className="mt-4 max-w-[430px] text-sm leading-6 text-zinc-400">
                         {profile.description}
                       </p>
@@ -224,7 +300,7 @@ export function PaginaRicercaPage() {
                     <div>
                       <div className="text-sm font-semibold text-zinc-200">Offre</div>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {profile.offers.map((skill) => (
+                        {(profile.offerte ?? []).map((skill) => (
                           <span
                             key={skill}
                             className="rounded-xl border border-emerald-500/20 bg-emerald-950/70 px-3 py-1.5 text-xs font-medium text-emerald-200"
@@ -237,7 +313,7 @@ export function PaginaRicercaPage() {
                     <div>
                       <div className="text-sm font-semibold text-zinc-200">Cerca</div>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {profile.seeks.map((skill) => (
+                        {(profile.cercate ?? []).map((skill) => (
                           <span
                             key={skill}
                             className="rounded-xl border border-indigo-500/20 bg-indigo-950/70 px-3 py-1.5 text-xs font-medium text-indigo-200"
@@ -252,7 +328,7 @@ export function PaginaRicercaPage() {
                   <div className="flex items-center justify-end">
                     <button
                       onClick={() => {
-                        navigate("/card");
+                        navigate("/card", { state: { profile } });
                       }}
                       type="button"
                       className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-400 transition-colors hover:border-orange-500/35 hover:text-orange-300"
