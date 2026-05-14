@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { Token, User, UserCreate, UserLogin, UserProfile, Match, Stats, Request } from "./types";
+import type { Token, User, UserCreate, UserLogin, UserProfile, Match, Stats, Request, Feedback } from "./types";
 
 export const authService = {
   register(payload: UserCreate) {
@@ -68,6 +68,10 @@ export const requestService = {
     return api.put<Request>(`/requests/${requestId}/decline`);
   },
 
+  completeRequest(requestId: number) {
+    return api.put<Request>(`/requests/${requestId}/complete`);
+  },
+
   cancelRequest(requestId: number) {
     return api.delete(`/requests/${requestId}`);
   },
@@ -104,5 +108,15 @@ export const blockService = {
 
   getBlockedUsers() {
     return api.get<number[]>("/blocks/mine");
+  },
+};
+
+export const feedbackService = {
+  submitFeedback(payload: { to_user_id: number; request_id: number; rating: number; comment: string }) {
+    return api.post<Feedback>("/feedback", payload);
+  },
+
+  getUserFeedback(userId: number) {
+    return api.get<Feedback[]>(`/users/${userId}/feedback`);
   },
 };

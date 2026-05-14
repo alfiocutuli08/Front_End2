@@ -1,10 +1,25 @@
-// Esporta il componente principale della pagina profilo
-import { useState } from "react";
-import { Search, ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Search, ArrowLeft, Star } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
+import { feedbackService } from "@/lib/services";
+import type { Feedback } from "@/lib/types";
+
 export default function profiloPersonale() {
+    const { user } = useAuth();
     const [isModified, setIsModified] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
     const [skillType, setSkillType] = useState("offerte");
+    const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+
+    useEffect(() => {
+        if (user?.id) {
+            feedbackService.getUserFeedback(user.id).then(({ data }) => setFeedbacks(data)).catch(() => {});
+        }
+    }, [user?.id]);
+
+    const avgRating = feedbacks.length
+        ? (feedbacks.reduce((a, f) => a + f.rating, 0) / feedbacks.length).toFixed(1)
+        : null;
   // Array delle skill offerte dall'utente
   // Ogni skill ha:
   // - name = nome della skill
@@ -51,9 +66,6 @@ export default function profiloPersonale() {
         Avanzato: "bg-green-100 text-green-800",
     };
 
-    const currentSkills =
-    skillType === "offerte" ? skillsOfferte : searchedSkills;
-
   // JSX della pagina
   return (
     // Contenitore principale
@@ -82,7 +94,7 @@ export default function profiloPersonale() {
                     </div>
                     {/* Nome utente */}
                     <h1 className="text-3xl font-semibold">
-                        Username
+                        {user?.name ?? "Username"}
                     </h1>
                     {/* Descrizione breve */}
                     <p className="text-slate-500 text-sm mt-1">
@@ -256,6 +268,55 @@ export default function profiloPersonale() {
                         ))}
                     </div>
                 </div>
+            </div>
+
+            {/* FEEDBACK */}
+            <div className="bg-black rounded-3xl border-2 !border-orange-500 p-6 shadow-lg lg:col-span-3">
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 className="text-2xl font-bold">Feedback ricevuti</h2>
+                        <p className="text-zinc-500 text-sm">Cosa dicono di te</p>
+                    </div>
+                </div>
+                {feedbacks.length === 0 ? (
+                    <p className="text-zinc-500 text-sm">Nessun feedback ancora.</p>
+                ) : (
+                    <>
+                        <div className="flex items-center gap-3 mb-5 pb-4 border-b border-orange-500/20">
+                            <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                    <Star
+                                        key={s}
+                                        size={20}
+                                        className={s <= Math.round(Number(avgRating)) ? "fill-yellow-400 text-yellow-400" : "text-zinc-600"}
+                                    />
+                                ))}
+                            </div>
+                            <span className="text-2xl font-bold text-yellow-400">{avgRating}</span>
+                            <span className="text-zinc-500 text-sm">({feedbacks.length} recensioni)</span>
+                        </div>
+                        <div className="space-y-4 max-h-80 overflow-y-auto">
+                            {feedbacks.map((fb) => (
+                                <div key={fb.id} className="bg-zinc-900/50 rounded-2xl p-4 border border-zinc-800">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-sm font-medium text-zinc-300">{fb.from_user_name || "Anonimo"}</span>
+                                        <div className="flex items-center gap-1">
+                                            {[1, 2, 3, 4, 5].map((s) => (
+                                                <Star
+                                                    key={s}
+                                                    size={14}
+                                                    className={s <= fb.rating ? "fill-yellow-400 text-yellow-400" : "text-zinc-600"}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    {fb.comment && <p className="text-zinc-400 text-sm">{fb.comment}</p>}
+                                    <p className="text-zinc-600 text-xs mt-2">{new Date(fb.created_at).toLocaleDateString()}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
         {showPopup && 

@@ -1,11 +1,9 @@
-import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
-import { Search, MapPin } from "lucide-react";
-import { requestService, blockService, reportService, userService } from "@/lib/services";
-import type { UserProfile, Request } from "@/lib/types";
+import { Search, MapPin, Star } from "lucide-react";
+import { requestService, blockService, reportService, userService, feedbackService } from "@/lib/services";
+import type { UserProfile, Feedback } from "@/lib/types";
 
 export default function ProfiloPubblico() {
-  const navigate = useNavigate();
   const [tab, setTab] = useState("panoramica");
   const [status, setStatus] = useState<"idle" | "pending" | "accepted" | "declined">("idle");
   const [showPopup, setShowPopup] = useState(false);
@@ -20,13 +18,19 @@ export default function ProfiloPubblico() {
   const [showReportPopup, setShowReportPopup] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [showReportConfirm, setShowReportConfirm] = useState(false);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
 
   const userId = Number(new URLSearchParams(window.location.search).get("id")) || 1;
 
   useEffect(() => {
     userService.getPublicProfile(userId).then(({ data }) => setProfile(data)).catch(() => {});
     blockService.getBlockedUsers().then(({ data }) => setIsBlocked(data.includes(userId))).catch(() => {});
+    feedbackService.getUserFeedback(userId).then(({ data }) => setFeedbacks(data)).catch(() => {});
   }, [userId]);
+
+  const avgRating = feedbacks.length
+    ? (feedbacks.reduce((a, f) => a + f.rating, 0) / feedbacks.length).toFixed(1)
+    : null;
 
   const handleRequestClick = () => {
     if (isBlocked) return;
@@ -213,7 +217,7 @@ export default function ProfiloPubblico() {
                     key={i}
                     className="bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-sm"
                   >
-                    {s.name}
+                    {s}
                   </span>
                 ))}
               </div>
@@ -226,10 +230,54 @@ export default function ProfiloPubblico() {
                     key={i}
                     className="bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-sm"
                   >
-                    {s.name}
+                    {s}
                   </span>
                 ))}
               </div>
+            </div>
+
+            {/* FEEDBACK */}
+            <div className="bg-zinc-950 rounded-2xl border border-zinc-800 p-5 md:col-span-2">
+              <h3 className="text-lg font-semibold mb-3">Feedback ricevuti</h3>
+              {feedbacks.length === 0 ? (
+                <p className="text-zinc-500 text-sm">Nessun feedback ancora.</p>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 mb-5 pb-4 border-b border-zinc-800">
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          size={20}
+                          className={s <= Math.round(Number(avgRating)) ? "fill-yellow-400 text-yellow-400" : "text-zinc-600"}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-2xl font-bold text-yellow-400">{avgRating}</span>
+                    <span className="text-zinc-500 text-sm">({feedbacks.length} recensioni)</span>
+                  </div>
+                  <div className="space-y-4 max-h-80 overflow-y-auto">
+                    {feedbacks.map((fb) => (
+                      <div key={fb.id} className="bg-zinc-900/50 rounded-2xl p-4 border border-zinc-800">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-zinc-300">{fb.from_user_name || "Anonimo"}</span>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star
+                                key={s}
+                                size={14}
+                                className={s <= fb.rating ? "fill-yellow-400 text-yellow-400" : "text-zinc-600"}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        {fb.comment && <p className="text-zinc-400 text-sm">{fb.comment}</p>}
+                        <p className="text-zinc-600 text-xs mt-2">{new Date(fb.created_at).toLocaleDateString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
           </div>
@@ -336,7 +384,7 @@ export default function ProfiloPubblico() {
                     key={i}
                     className="bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-sm"
                   >
-                    {s.name}
+                    {s}
                   </span>
                 ))}
               </div>
@@ -381,11 +429,12 @@ export default function ProfiloPubblico() {
                     key={i}
                     className="bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-sm"
                   >
-                    {s.name}
+                    {s}
                   </span>
                 ))}
               </div>
             </div>
+
           </div>
         )}
       </div>

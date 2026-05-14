@@ -54,7 +54,7 @@ export type Stats = {
   rating_medio: number
 }
 
-export type RequestStatus = "pending" | "accepted" | "declined"
+export type RequestStatus = "pending" | "accepted" | "declined" | "completed"
 
 export type Request = {
   id: number
@@ -62,4 +62,17 @@ export type Request = {
   to_user_id: number
   status: RequestStatus
   created_at: string
+  from_user_name?: string
+  to_user_name?: string
+}
+
+export type Feedback = {
+  id: number
+  from_user_id: number
+  to_user_id: number
+  request_id: number
+  rating: number
+  comment: string | null
+  created_at: string
+  from_user_name?: string
 }

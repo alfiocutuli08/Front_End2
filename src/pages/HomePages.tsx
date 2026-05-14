@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
+import { requestService } from "@/lib/services";
 import {
   Search,
   Bell,
@@ -24,70 +25,44 @@ export default function HomePages() {
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [matches, setMatches] = useState<Match[] | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     statsService.getHomeStats().then(({ data }) => setStats(data)).catch(() => {});
     searchService.getMatches().then(({ data }) => setMatches(data)).catch(() => {});
-  }, []);
-  const utenti = [
-    {
-      nome: "Luca Bianchi",
-      citta: "Milano, Italia",
-      livello: "Avanzato",
-      rating: "4.9",
-      offerte: ["React", "TypeScript", "UI Design"],
-      cercate: ["Docker", "Node.js"],
-      img: "https://i.pravatar.cc/300?img=12",
-    },
-    {
-      nome: "Marco Rossi",
-      citta: "Roma, Italia",
-      livello: "Intermedio",
-      rating: "4.7",
-      offerte: ["Python", "FastAPI", "SQLAlchemy"],
-      cercate: ["React", "Tailwind"],
-      img: "https://i.pravatar.cc/300?img=15",
-    },
-    {
-      nome: "Giulia Verdi",
-      citta: "Torino, Italia",
-      livello: "Avanzato",
-      rating: "5.0",
-      offerte: ["Figma", "UX Design", "Tailwind"],
-      cercate: ["PostgreSQL", "Backend"],
-      img: "https://i.pravatar.cc/300?img=32",
-    },
-  ];
-
+    if (user) {
+      requestService.getPendingRequests().then(({ data }) => setPendingCount(data.length)).catch(() => {});
+    }
+  }, [user]);
   const displayUsers = matches ?? [
     {
-      nome: "Luca Bianchi",
-      citta: "Milano, Italia",
-      livello: "Avanzato",
-      rating: "4.9",
+      name: "Luca Bianchi",
+      location: "Milano, Italia",
+      level: "Avanzato",
+      rating: 4.9,
       offerte: ["React", "TypeScript", "UI Design"],
       cercate: ["Docker", "Node.js"],
-      img: "https://i.pravatar.cc/300?img=12",
+      image_url: "https://i.pravatar.cc/300?img=12",
     },
     {
-      nome: "Marco Rossi",
-      citta: "Roma, Italia",
-      livello: "Intermedio",
-      rating: "4.7",
+      name: "Marco Rossi",
+      location: "Roma, Italia",
+      level: "Intermedio",
+      rating: 4.7,
       offerte: ["Python", "FastAPI", "SQLAlchemy"],
       cercate: ["React", "Tailwind"],
-      img: "https://i.pravatar.cc/300?img=15",
+      image_url: "https://i.pravatar.cc/300?img=15",
     },
     {
-      nome: "Giulia Verdi",
-      citta: "Torino, Italia",
-      livello: "Avanzato",
-      rating: "5.0",
+      name: "Giulia Verdi",
+      location: "Torino, Italia",
+      level: "Avanzato",
+      rating: 5.0,
       offerte: ["Figma", "UX Design", "Tailwind"],
       cercate: ["PostgreSQL", "Backend"],
-      img: "https://i.pravatar.cc/300?img=32",
+      image_url: "https://i.pravatar.cc/300?img=32",
     },
-  ];
+  ] as Match[];
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -128,14 +103,19 @@ export default function HomePages() {
             {user ? (
               <>
                 <button
-                  onClick={() => navigate("/dashboard")}
-                  className="w-11 h-11 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-500/10 transition-all"
+                  onClick={() => navigate("/richieste")}
+                  className="relative w-11 h-11 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-500/10 transition-all"
                 >
                   <Bell size={18} />
+                  {pendingCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-orange-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px]">
+                      {pendingCount}
+                    </span>
+                  )}
                 </button>
                 <button
-                  onClick={() => navigate("/dashboard")}
-                  className="w-11 h-11 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-500/10 transition-all"
+                  onClick={() => navigate("/richieste")}
+                  className="relative w-11 h-11 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-500/10 transition-all"
                 >
                   <MessageCircle size={18} />
                 </button>
@@ -255,7 +235,7 @@ export default function HomePages() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {displayUsers.map((utente) => (
             <div
-              key={utente.nome}
+              key={utente.name}
               className="group bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 hover:border-orange-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-500/5 backdrop-blur-sm relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -263,18 +243,18 @@ export default function HomePages() {
               <div className="flex items-start gap-4 relative">
                 <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-orange-500 ring-2 ring-orange-500/20 shrink-0">
                   <img
-                    src={utente.img}
-                    alt={utente.nome}
+                    src={utente.image_url}
+                    alt={utente.name}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xl font-semibold truncate">
-                    {utente.nome}
+                    {utente.name}
                   </h4>
                   <div className="flex items-center gap-2 text-zinc-400 text-sm mt-1">
                     <MapPin size={14} className="text-orange-500 shrink-0" />
-                    <span className="truncate">{utente.citta}</span>
+                    <span className="truncate">{utente.location}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-3">
                     <div className="flex items-center gap-1 text-yellow-400 text-sm">
@@ -282,7 +262,7 @@ export default function HomePages() {
                       {utente.rating}
                     </div>
                     <span className="text-xs px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/20">
-                      {utente.livello}
+                      {utente.level}
                     </span>
                   </div>
                 </div>
