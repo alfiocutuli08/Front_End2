@@ -1,49 +1,87 @@
 import { api } from "./api";
-import type { Token, User, UserCreate, UserLogin, UserProfile, Match, Stats, Request, Feedback } from "./types";
+import type { User, UserCreate, UserLogin, UserUpdate, Skill, UserSkill, Match, Stats, Request, Feedback } from "./types";
+
+// ── GESTIONE UTENTE LOGGATO ──
+
+export function getUserId(): number | null {
+  const id = localStorage.getItem("user_id");
+  return id ? Number(id) : null;
+}
+
+export function saveUserId(id: number) {
+  localStorage.setItem("user_id", String(id));
+}
+
+export function removeUserId() {
+  localStorage.removeItem("user_id");
+}
+
+export function isLoggedIn(): boolean {
+  return !!localStorage.getItem("user_id");
+}
+
+// ── AUTH ──
 
 export const authService = {
   register(payload: UserCreate) {
-    return api.post<Token>("/auth/register", payload);
+    return api.post<User>("/auth/register", payload);
   },
 
   login(payload: UserLogin) {
-    return api.post<Token>("/auth/login", payload);
+    return api.post<User>("/auth/login", payload);
   },
 
   me() {
-    return api.get<User>("/auth/me");
-  },
-
-  getToken(): string | null {
-    return localStorage.getItem("auth_token");
-  },
-
-  saveToken(token: string) {
-    localStorage.setItem("auth_token", token);
-  },
-
-  removeToken() {
-    localStorage.removeItem("auth_token");
-  },
-
-  isAuthenticated(): boolean {
-    return !!localStorage.getItem("auth_token");
+    const uid = getUserId();
+    return api.get<User>("/auth/me", { params: { user_id: uid } });
   },
 };
+
+// ── UTENTI ──
 
 export const userService = {
   getProfile(userId: number) {
-    return api.get<UserProfile>(`/users/${userId}`);
+    return api.get<User>(`/users/${userId}`);
   },
 
   getPublicProfile(userId: number) {
-    return api.get<UserProfile>(`/users/${userId}/public`);
+    return api.get<User>(`/users/${userId}`);
   },
 
-  updateProfile(data: Partial<UserProfile>) {
-    return api.put<UserProfile>("/users/me", data);
+  updateProfile(userId: number, data: UserUpdate) {
+    return api.put<User>(`/users/${userId}`, data);
   },
 };
+
+// ── SKILL GLOBALI ──
+
+export const skillService = {
+  list() {
+    return api.get<Skill[]>("/skills");
+  },
+
+  create(name: string) {
+    return api.post<Skill>("/skills", { name });
+  },
+};
+
+// ── SKILL UTENTE ──
+
+export const userSkillService = {
+  getUserSkills(userId: number) {
+    return api.get<UserSkill[]>(`/users/${userId}/skills`);
+  },
+
+  addSkill(userId: number, payload: { skill_id: number; category: string; level: string }) {
+    return api.post<UserSkill>(`/users/${userId}/skills`, payload);
+  },
+
+  removeSkill(userId: number, usId: number) {
+    return api.delete(`/users/${userId}/skills/${usId}`);
+  },
+};
+
+// ── RICERCA ──
 
 export const searchService = {
   searchUsers(query: string) {
@@ -55,35 +93,46 @@ export const searchService = {
   },
 };
 
+// ── RICHIESTE ──
+
 export const requestService = {
   sendRequest(toUserId: number) {
-    return api.post<Request>("/requests", { to_user_id: toUserId });
+    const uid = getUserId();
+    return api.post<Request>("/requests", { to_user_id: toUserId }, { params: { from_user_id: uid } });
   },
 
   acceptRequest(requestId: number) {
-    return api.put<Request>(`/requests/${requestId}/accept`);
+    const uid = getUserId();
+    return api.put<Request>(`/requests/${requestId}/accept`, null, { params: { user_id: uid } });
   },
 
   declineRequest(requestId: number) {
-    return api.put<Request>(`/requests/${requestId}/decline`);
+    const uid = getUserId();
+    return api.put<Request>(`/requests/${requestId}/decline`, null, { params: { user_id: uid } });
   },
 
   completeRequest(requestId: number) {
-    return api.put<Request>(`/requests/${requestId}/complete`);
+    const uid = getUserId();
+    return api.put<Request>(`/requests/${requestId}/complete`, null, { params: { user_id: uid } });
   },
 
   cancelRequest(requestId: number) {
-    return api.delete(`/requests/${requestId}`);
+    const uid = getUserId();
+    return api.delete(`/requests/${requestId}`, { params: { user_id: uid } });
   },
 
   getMyRequests() {
-    return api.get<Request[]>("/requests/mine");
+    const uid = getUserId();
+    return api.get<Request[]>("/requests/mine", { params: { user_id: uid } });
   },
 
   getPendingRequests() {
-    return api.get<Request[]>("/requests/pending");
+    const uid = getUserId();
+    return api.get<Request[]>("/requests/pending", { params: { user_id: uid } });
   },
 };
+
+// ── STATS ──
 
 export const statsService = {
   getHomeStats() {
@@ -91,29 +140,36 @@ export const statsService = {
   },
 };
 
+// ── FEEDBACK ──
+
 export const reportService = {
   reportUser(userId: number, reason: string) {
-    return api.post("/reports", { user_id: userId, reason });
+    const uid = getUserId();
+    return api.post("/reports", { user_id: userId, reason }, { params: { from_user_id: uid } });
   },
 };
 
 export const blockService = {
   blockUser(userId: number) {
-    return api.post("/blocks", { blocked_user_id: userId });
+    const uid = getUserId();
+    return api.post("/blocks", { blocked_user_id: userId }, { params: { user_id: uid } });
   },
 
   unblockUser(userId: number) {
-    return api.delete(`/blocks/${userId}`);
+    const uid = getUserId();
+    return api.delete(`/blocks/${userId}`, { params: { user_id: uid } });
   },
 
   getBlockedUsers() {
-    return api.get<number[]>("/blocks/mine");
+    const uid = getUserId();
+    return api.get<number[]>("/blocks/mine", { params: { user_id: uid } });
   },
 };
 
 export const feedbackService = {
   submitFeedback(payload: { to_user_id: number; request_id: number; rating: number; comment: string }) {
-    return api.post<Feedback>("/feedback", payload);
+    const uid = getUserId();
+    return api.post<Feedback>("/feedback", payload, { params: { from_user_id: uid } });
   },
 
   getUserFeedback(userId: number) {

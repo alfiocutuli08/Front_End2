@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { authService } from "./services";
+import { authService, isLoggedIn, removeUserId, saveUserId } from "./services";
 import type { User } from "./types";
 
 type AuthContextType = {
   user: User | null;
   loading: boolean;
-  login: (token: string) => Promise<void>;
+  login: (user: User) => Promise<void>;
   logout: () => void;
   refresh: () => Promise<void>;
 };
@@ -17,7 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refresh = async () => {
-    if (!authService.isAuthenticated()) {
+    if (!isLoggedIn()) {
       setUser(null);
       setLoading(false);
       return;
@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data } = await authService.me();
       setUser(data);
     } catch {
-      authService.removeToken();
+      removeUserId();
       setUser(null);
     } finally {
       setLoading(false);
@@ -37,13 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refresh();
   }, []);
 
-  const login = async (token: string) => {
-    authService.saveToken(token);
-    await refresh();
+  const login = async (userData: User) => {
+    saveUserId(userData.id);
+    setUser(userData);
   };
 
   const logout = () => {
-    authService.removeToken();
+    removeUserId();
     setUser(null);
   };
 

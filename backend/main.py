@@ -1,28 +1,41 @@
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from passlib.context import CryptContext
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from auth import create_access_token, get_current_user, hash_password, verify_password
 from database import Base, engine, get_db
 from models import Feedback as FeedbackModel
 from models import Request as RequestModel
-from models import User
+from models import Skill as SkillModel
+from models import User as UserModel
+from models import UserSkill as UserSkillModel
 from schemas import (
     FeedbackCreate,
     FeedbackOut,
+    MatchOut,
     RequestCreate,
     RequestOut,
-    Token,
+    SkillCreate,
+    SkillOut,
+    StatsOut,
     UserCreate,
     UserLogin,
-    UserRead,
+    UserOut,
+    UserSkillCreate,
+    UserSkillOut,
+    UserUpdate,
 )
 
+# Crea le tabelle nel database (se non esistono)
 Base.metadata.create_all(bind=engine)
+
+# Usa bcrypt per criptare le password (senza JWT)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app = FastAPI(title="SkillSwap API")
 
+# Abilita CORS per permettere al frontend di chiamare il backend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -36,24 +49,65 @@ app.add_middleware(
 )
 
 
+# ── FUNZIONI DI SUPPORTO ──
+
+def hash_password(password: str) -> str:
+    """Cripta la password con bcrypt."""
+    return pwd_context.hash(password)
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Verifica la password confrontandola con l'hash salvato."""
+    return pwd_context.verify(password, hashed)
+
+
+def _user_to_out(user: UserModel, db: Session) -> UserOut:
+    """Converte un oggetto User in UserOut includendo le skill collegate."""
+    skills = db.scalars(
+        select(UserSkillModel).where(UserSkillModel.user_id == user.id)
+    ).all()
+    skills_out = []
+    for us in skills:
+        skill = db.get(SkillModel, us.skill_id)
+        skills_out.append(UserSkillOut(
+            id=us.id,
+            user_id=us.user_id,
+            skill_id=us.skill_id,
+            category=us.category,
+            level=us.level,
+            skill_name=skill.name if skill else "",
+        ))
+    return UserOut(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        bio=user.bio,
+        location=user.location,
+        level=user.level,
+        image_url=user.image_url,
+        skills=skills_out,
+    )
+
+
+# ── ENDPOINT GENERALE ──
+
 @app.get("/health")
 def health_check():
+    """Endpoint per testare se il server è vivo."""
     return {"status": "ok"}
 
 
-# ── AUTH ──
+# ── ENDPOINT UTENTI (nessun JWT, usiamo solo l'ID) ──
 
+@app.post("/auth/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+def register(payload: UserCreate, db: Session = next(get_db())):
+    """Registra un nuovo utente e lo restituisce subito (nessun token)."""
+    # Controlla se l'email è già usata
+    existing = db.scalar(select(UserModel).where(UserModel.email == payload.email))
+    if existing:
+        raise HTTPException(status_code=409, detail="Email già registrata")
 
-@app.post("/auth/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-def register(payload: UserCreate, db: Session = Depends(get_db)):
-    existing_user = db.scalar(select(User).where(User.email == payload.email))
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered",
-        )
-
-    user = User(
+    user = UserModel(
         name=payload.name,
         email=payload.email,
         hashed_password=hash_password(payload.password),
@@ -61,165 +115,360 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+    return _user_to_out(user, db)
 
-    return Token(access_token=create_access_token(str(user.id)))
 
-
-@app.post("/auth/login", response_model=Token)
-def login(payload: UserLogin, db: Session = Depends(get_db)):
-    user = db.scalar(select(User).where(User.email == payload.email))
+@app.post("/auth/login", response_model=UserOut)
+def login(payload: UserLogin, db: Session = next(get_db())):
+    """Login: restituisce l'utente se email+password sono corretti."""
+    user = db.scalar(select(UserModel).where(UserModel.email == payload.email))
     if user is None or not verify_password(payload.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-        )
+        raise HTTPException(status_code=401, detail="Email o password errati")
 
-    return Token(access_token=create_access_token(str(user.id)))
+    return _user_to_out(user, db)
 
 
-@app.get("/auth/me", response_model=UserRead)
-def me(current_user: User = Depends(get_current_user)):
-    return current_user
-
-
-# ── USERS ──
-
-
-@app.get("/users/{user_id}/public", response_model=UserRead)
-def get_public_profile(user_id: int, db: Session = Depends(get_db)):
-    user = db.get(User, user_id)
+@app.get("/auth/me", response_model=UserOut)
+def get_me(user_id: int = Query(..., description="ID dell'utente loggato"), db: Session = next(get_db())):
+    """Restituisce il profilo dell'utente loggato."""
+    user = db.get(UserModel, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+    return _user_to_out(user, db)
 
 
-# ── REQUESTS ──
+@app.get("/users/{user_id}", response_model=UserOut)
+def get_user(user_id: int, db: Session = next(get_db())):
+    """Restituisce il profilo completo di un utente (con le sue skill)."""
+    user = db.get(UserModel, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+    return _user_to_out(user, db)
 
+
+@app.put("/users/{user_id}", response_model=UserOut)
+def update_user(user_id: int, payload: UserUpdate, db: Session = next(get_db())):
+    """Aggiorna i dati del profilo utente (bio, location, level, image_url, name)."""
+    user = db.get(UserModel, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Utente non trovato")
+
+    # Aggiorna solo i campi forniti
+    if payload.name is not None:
+        user.name = payload.name
+    if payload.bio is not None:
+        user.bio = payload.bio
+    if payload.location is not None:
+        user.location = payload.location
+    if payload.level is not None:
+        user.level = payload.level
+    if payload.image_url is not None:
+        user.image_url = payload.image_url
+
+    db.commit()
+    db.refresh(user)
+    return _user_to_out(user, db)
+
+
+# ── RICERCA UTENTI ──
+
+@app.get("/users/search", response_model=list[MatchOut])
+def search_users(q: str = Query("", description="Testo da cercare"), db: Session = next(get_db())):
+    """Cerca utenti per nome o skill (match parziale)."""
+    if not q:
+        return []
+
+    # Cerca per nome utente
+    users = db.scalars(
+        select(UserModel).where(UserModel.name.ilike(f"%{q}%"))
+    ).all()
+
+    # Cerca anche per nome skill
+    skill_match = db.scalars(
+        select(SkillModel).where(SkillModel.name.ilike(f"%{q}%"))
+    ).all()
+    if skill_match:
+        skill_ids = [s.id for s in skill_match]
+        user_skills = db.scalars(
+            select(UserSkillModel).where(UserSkillModel.skill_id.in_(skill_ids))
+        ).all()
+        extra_user_ids = {us.user_id for us in user_skills}
+        for uid in extra_user_ids:
+            u = db.get(UserModel, uid)
+            if u and u not in users:
+                users.append(u)
+
+    return [_user_to_match(u, db) for u in users]
+
+
+@app.get("/users/matches", response_model=list[MatchOut])
+def get_matches(db: Session = next(get_db())):
+    """Restituisce tutti gli utenti come potenziali match."""
+    users = db.scalars(select(UserModel)).all()
+    return [_user_to_match(u, db) for u in users]
+
+
+def _user_to_match(user: UserModel, db: Session) -> MatchOut:
+    """Converte un utente in formato Match, separando le skill in offerte/cercate."""
+    # Calcola rating medio dai feedback ricevuti
+    avg_rating = db.scalar(
+        select(func.avg(FeedbackModel.rating)).where(FeedbackModel.to_user_id == user.id)
+    )
+    rating = round(float(avg_rating), 2) if avg_rating else None
+
+    # Legge le skill collegate
+    user_skills = db.scalars(
+        select(UserSkillModel).where(UserSkillModel.user_id == user.id)
+    ).all()
+
+    offerte = []
+    cercate = []
+    for us in user_skills:
+        skill = db.get(SkillModel, us.skill_id)
+        name = skill.name if skill else ""
+        if us.category == "offer":
+            offerte.append(name)
+        else:
+            cercate.append(name)
+
+    return MatchOut(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        location=user.location,
+        level=user.level,
+        rating=rating,
+        image_url=user.image_url,
+        offerte=offerte,
+        cercate=cercate,
+    )
+
+
+# ── ENDPOINT SKILL (gestione delle competenze globali) ──
+
+@app.get("/skills", response_model=list[SkillOut])
+def list_skills(db: Session = next(get_db())):
+    """Restituisce l'elenco di tutte le skill disponibili."""
+    skills = db.scalars(select(SkillModel).order_by(SkillModel.name)).all()
+    return skills
+
+
+@app.post("/skills", response_model=SkillOut, status_code=status.HTTP_201_CREATED)
+def create_skill(payload: SkillCreate, db: Session = next(get_db())):
+    """Crea una nuova skill globale."""
+    existing = db.scalar(select(SkillModel).where(SkillModel.name == payload.name))
+    if existing:
+        raise HTTPException(status_code=409, detail="Skill già esistente")
+    skill = SkillModel(name=payload.name)
+    db.add(skill)
+    db.commit()
+    db.refresh(skill)
+    return skill
+
+
+# ── ENDPOINT USER-SKILL (collegare skill a un utente) ──
+
+@app.get("/users/{user_id}/skills", response_model=list[UserSkillOut])
+def get_user_skills(user_id: int, db: Session = next(get_db())):
+    """Restituisce tutte le skill collegate a un utente."""
+    user_skills = db.scalars(
+        select(UserSkillModel).where(UserSkillModel.user_id == user_id)
+    ).all()
+    result = []
+    for us in user_skills:
+        skill = db.get(SkillModel, us.skill_id)
+        result.append(UserSkillOut(
+            id=us.id,
+            user_id=us.user_id,
+            skill_id=us.skill_id,
+            category=us.category,
+            level=us.level,
+            skill_name=skill.name if skill else "",
+        ))
+    return result
+
+
+@app.post("/users/{user_id}/skills", response_model=UserSkillOut, status_code=status.HTTP_201_CREATED)
+def add_user_skill(user_id: int, payload: UserSkillCreate, db: Session = next(get_db())):
+    """Collega una skill a un utente con categoria (offer/search) e livello."""
+    # Verifica che la skill esista
+    skill = db.get(SkillModel, payload.skill_id)
+    if not skill:
+        raise HTTPException(status_code=404, detail="Skill non trovata")
+
+    # Evita duplicati (stessa skill + stessa categoria)
+    existing = db.scalar(
+        select(UserSkillModel).where(
+            UserSkillModel.user_id == user_id,
+            UserSkillModel.skill_id == payload.skill_id,
+            UserSkillModel.category == payload.category,
+        )
+    )
+    if existing:
+        raise HTTPException(status_code=409, detail="Skill già aggiunta in questa categoria")
+
+    us = UserSkillModel(
+        user_id=user_id,
+        skill_id=payload.skill_id,
+        category=payload.category,
+        level=payload.level,
+    )
+    db.add(us)
+    db.commit()
+    db.refresh(us)
+    return UserSkillOut(
+        id=us.id,
+        user_id=us.user_id,
+        skill_id=us.skill_id,
+        category=us.category,
+        level=us.level,
+        skill_name=skill.name,
+    )
+
+
+@app.delete("/users/{user_id}/skills/{us_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_user_skill(user_id: int, us_id: int, db: Session = next(get_db())):
+    """Rimuove una skill da un utente."""
+    us = db.scalar(
+        select(UserSkillModel).where(
+            UserSkillModel.id == us_id,
+            UserSkillModel.user_id == user_id,
+        )
+    )
+    if not us:
+        raise HTTPException(status_code=404, detail="Skill non trovata per questo utente")
+    db.delete(us)
+    db.commit()
+
+
+# ── ENDPOINT STATS ──
+
+@app.get("/stats/home", response_model=StatsOut)
+def get_home_stats(db: Session = next(get_db())):
+    """Restituisce le statistiche per la homepage."""
+    utenti_attivi = db.scalar(select(func.count(UserModel.id)))
+    sessioni_completate = db.scalar(
+        select(func.count(RequestModel.id)).where(RequestModel.status == "completed")
+    )
+    skill_disponibili = db.scalar(select(func.count(SkillModel.id)))
+    avg_rating = db.scalar(select(func.avg(FeedbackModel.rating)))
+
+    return StatsOut(
+        utenti_attivi=utenti_attivi or 0,
+        sessioni_completate=sessioni_completate or 0,
+        skill_disponibili=skill_disponibili or 0,
+        rating_medio=round(float(avg_rating), 2) if avg_rating else 0,
+    )
+
+
+# ── ENDPOINT RICHIESTE ──
 
 @app.post("/requests", response_model=RequestOut, status_code=status.HTTP_201_CREATED)
-def send_request(
-    payload: RequestCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    if payload.to_user_id == current_user.id:
-        raise HTTPException(status_code=400, detail="Cannot send request to yourself")
+def send_request(payload: RequestCreate, from_user_id: int = Query(...), db: Session = next(get_db())):
+    """Invia una richiesta di collaborazione a un altro utente."""
+    if payload.to_user_id == from_user_id:
+        raise HTTPException(status_code=400, detail="Non puoi inviare richiesta a te stesso")
 
     existing = db.scalar(
         select(RequestModel).where(
-            RequestModel.from_user_id == current_user.id,
+            RequestModel.from_user_id == from_user_id,
             RequestModel.to_user_id == payload.to_user_id,
             RequestModel.status.in_(["pending", "accepted"]),
         )
     )
     if existing:
-        raise HTTPException(status_code=409, detail="Request already exists")
+        raise HTTPException(status_code=409, detail="Richiesta già esistente")
 
-    req = RequestModel(from_user_id=current_user.id, to_user_id=payload.to_user_id)
+    req = RequestModel(from_user_id=from_user_id, to_user_id=payload.to_user_id)
     db.add(req)
     db.commit()
     db.refresh(req)
-    return _request_out(req, current_user, db)
+    return _request_out(req, db)
 
 
 @app.put("/requests/{req_id}/accept", response_model=RequestOut)
-def accept_request(
-    req_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
+def accept_request(req_id: int, user_id: int = Query(...), db: Session = next(get_db())):
+    """Accetta una richiesta ricevuta."""
     req = db.get(RequestModel, req_id)
-    if not req or req.to_user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Request not found")
+    if not req or req.to_user_id != user_id:
+        raise HTTPException(status_code=404, detail="Richiesta non trovata")
     if req.status != "pending":
-        raise HTTPException(status_code=400, detail="Request is not pending")
+        raise HTTPException(status_code=400, detail="Richiesta non in attesa")
     req.status = "accepted"
     db.commit()
     db.refresh(req)
-    return _request_out(req, current_user, db)
+    return _request_out(req, db)
 
 
 @app.put("/requests/{req_id}/decline", response_model=RequestOut)
-def decline_request(
-    req_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
+def decline_request(req_id: int, user_id: int = Query(...), db: Session = next(get_db())):
+    """Rifiuta una richiesta ricevuta."""
     req = db.get(RequestModel, req_id)
-    if not req or req.to_user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Request not found")
+    if not req or req.to_user_id != user_id:
+        raise HTTPException(status_code=404, detail="Richiesta non trovata")
     if req.status != "pending":
-        raise HTTPException(status_code=400, detail="Request is not pending")
+        raise HTTPException(status_code=400, detail="Richiesta non in attesa")
     req.status = "declined"
     db.commit()
     db.refresh(req)
-    return _request_out(req, current_user, db)
+    return _request_out(req, db)
 
 
 @app.put("/requests/{req_id}/complete", response_model=RequestOut)
-def complete_request(
-    req_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
+def complete_request(req_id: int, user_id: int = Query(...), db: Session = next(get_db())):
+    """Segna una richiesta come completata."""
     req = db.get(RequestModel, req_id)
     if not req:
-        raise HTTPException(status_code=404, detail="Request not found")
-    if req.from_user_id != current_user.id and req.to_user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not your request")
+        raise HTTPException(status_code=404, detail="Richiesta non trovata")
+    if req.from_user_id != user_id and req.to_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Non sei parte di questa richiesta")
     if req.status != "accepted":
-        raise HTTPException(status_code=400, detail="Request must be accepted first")
+        raise HTTPException(status_code=400, detail="La richiesta deve essere prima accettata")
     req.status = "completed"
     db.commit()
     db.refresh(req)
-    return _request_out(req, current_user, db)
+    return _request_out(req, db)
 
 
 @app.delete("/requests/{req_id}", status_code=status.HTTP_204_NO_CONTENT)
-def cancel_request(
-    req_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
+def cancel_request(req_id: int, user_id: int = Query(...), db: Session = next(get_db())):
+    """Cancella una richiesta (solo chi l'ha inviata)."""
     req = db.get(RequestModel, req_id)
     if not req:
-        raise HTTPException(status_code=404, detail="Request not found")
-    if req.from_user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Can only cancel your own requests")
+        raise HTTPException(status_code=404, detail="Richiesta non trovata")
+    if req.from_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Puoi cancellare solo le tue richieste")
     db.delete(req)
     db.commit()
 
 
 @app.get("/requests/mine", response_model=list[RequestOut])
-def get_my_requests(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
+def get_my_requests(user_id: int = Query(...), db: Session = next(get_db())):
+    """Restituisce tutte le richieste dell'utente (inviate e ricevute)."""
     reqs = db.scalars(
         select(RequestModel).where(
-            (RequestModel.from_user_id == current_user.id) | (RequestModel.to_user_id == current_user.id)
+            (RequestModel.from_user_id == user_id) | (RequestModel.to_user_id == user_id)
         ).order_by(RequestModel.created_at.desc())
     ).all()
-    return [_request_out(r, current_user, db) for r in reqs]
+    return [_request_out(r, db) for r in reqs]
 
 
 @app.get("/requests/pending", response_model=list[RequestOut])
-def get_pending_requests(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
+def get_pending_requests(user_id: int = Query(...), db: Session = next(get_db())):
+    """Restituisce le richieste in sospeso ricevute dall'utente."""
     reqs = db.scalars(
         select(RequestModel).where(
-            RequestModel.to_user_id == current_user.id,
+            RequestModel.to_user_id == user_id,
             RequestModel.status == "pending",
         ).order_by(RequestModel.created_at.desc())
     ).all()
-    return [_request_out(r, current_user, db) for r in reqs]
+    return [_request_out(r, db) for r in reqs]
 
 
-def _request_out(req: RequestModel, _current_user: User, db: Session) -> RequestOut:
-    from_user = db.get(User, req.from_user_id)
-    to_user = db.get(User, req.to_user_id)
+def _request_out(req: RequestModel, db: Session) -> RequestOut:
+    """Converte una Request in RequestOut con i nomi degli utenti."""
+    from_user = db.get(UserModel, req.from_user_id)
+    to_user = db.get(UserModel, req.to_user_id)
     return RequestOut(
         id=req.id,
         from_user_id=req.from_user_id,
@@ -231,34 +480,30 @@ def _request_out(req: RequestModel, _current_user: User, db: Session) -> Request
     )
 
 
-# ── FEEDBACKS ──
-
+# ── ENDPOINT FEEDBACK ──
 
 @app.post("/feedback", response_model=FeedbackOut, status_code=status.HTTP_201_CREATED)
-def submit_feedback(
-    payload: FeedbackCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
+def submit_feedback(payload: FeedbackCreate, from_user_id: int = Query(...), db: Session = next(get_db())):
+    """Invia un feedback per una richiesta completata."""
     req = db.get(RequestModel, payload.request_id)
     if not req:
-        raise HTTPException(status_code=404, detail="Request not found")
+        raise HTTPException(status_code=404, detail="Richiesta non trovata")
     if req.status != "completed":
-        raise HTTPException(status_code=400, detail="Can only review completed requests")
-    if req.from_user_id != current_user.id and req.to_user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not your request")
+        raise HTTPException(status_code=400, detail="Puoi recensire solo richieste completate")
+    if req.from_user_id != from_user_id and req.to_user_id != from_user_id:
+        raise HTTPException(status_code=403, detail="Non sei parte di questa richiesta")
 
     existing = db.scalar(
         select(FeedbackModel).where(
             FeedbackModel.request_id == payload.request_id,
-            FeedbackModel.from_user_id == current_user.id,
+            FeedbackModel.from_user_id == from_user_id,
         )
     )
     if existing:
-        raise HTTPException(status_code=409, detail="Already reviewed this request")
+        raise HTTPException(status_code=409, detail="Hai già recensito questa richiesta")
 
     fb = FeedbackModel(
-        from_user_id=current_user.id,
+        from_user_id=from_user_id,
         to_user_id=payload.to_user_id,
         request_id=payload.request_id,
         rating=payload.rating,
@@ -271,7 +516,8 @@ def submit_feedback(
 
 
 @app.get("/users/{user_id}/feedback", response_model=list[FeedbackOut])
-def get_user_feedback(user_id: int, db: Session = Depends(get_db)):
+def get_user_feedback(user_id: int, db: Session = next(get_db())):
+    """Restituisce tutti i feedback ricevuti da un utente."""
     fbs = db.scalars(
         select(FeedbackModel).where(FeedbackModel.to_user_id == user_id).order_by(FeedbackModel.created_at.desc())
     ).all()
@@ -279,7 +525,8 @@ def get_user_feedback(user_id: int, db: Session = Depends(get_db)):
 
 
 def _feedback_out(fb: FeedbackModel, db: Session) -> FeedbackOut:
-    from_user = db.get(User, fb.from_user_id)
+    """Converte un Feedback in FeedbackOut con il nome del mittente."""
+    from_user = db.get(UserModel, fb.from_user_id)
     return FeedbackOut(
         id=fb.id,
         from_user_id=fb.from_user_id,

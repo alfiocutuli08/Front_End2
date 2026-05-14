@@ -30,7 +30,7 @@ export function RegisterPage() {
 
     try {
       const { data } = await authService.register({ name, email, password });
-      await login(data.access_token);
+      await login(data);
       navigate("/dashboard");
     } catch {
       setMessage("Registrazione non riuscita. Controlla i dati o avvia il backend.");

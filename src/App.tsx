@@ -19,7 +19,7 @@ function App() {
         <Routes>
           <Route path="/">
             <Route index element={<HomePages />} />
-            <Route path="profilo" element={<SkillProfilePage />} />
+            <Route path="profile" element={<SkillProfilePage />} />
             <Route path="public" element={<ProfiloPubblico />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<RegisterPage />} />

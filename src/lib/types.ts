@@ -2,11 +2,20 @@ export type User = {
   id: number
   name: string
   email: string
+  bio?: string
+  location?: string
+  level?: string
+  image_url?: string
+  skills?: UserSkill[]
 }
 
-export type Token = {
-  access_token: string
-  token_type: string
+export type UserSkill = {
+  id: number
+  user_id: number
+  skill_id: number
+  category: "offer" | "search"
+  level: string
+  skill_name: string
 }
 
 export type UserCreate = {
@@ -20,20 +29,21 @@ export type UserLogin = {
   password: string
 }
 
-export type Skill = {
-  id: number
-  name: string
-  category: "offer" | "search"
-}
-
-export type UserProfile = User & {
+export type UserUpdate = {
+  name?: string
   bio?: string
   location?: string
   level?: string
-  rating?: number
-  skills?: Skill[]
   image_url?: string
 }
+
+export type Skill = {
+  id: number
+  name: string
+  category?: "offer" | "search"
+}
+
+export type UserProfile = User
 
 export type Match = {
   id: number

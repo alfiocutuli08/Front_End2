@@ -49,6 +49,35 @@ export function PaginaRicercaPage() {
   const navigate = useNavigate();
   const [showOfferedSkills, setShowOfferedSkills] = useState(true);
   const [showSoughtSkills, setShowSoughtSkills] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredProfiles = profiles.filter(profile => {
+    // Check if profile matches search query
+    const matchesSearch = profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         profile.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         profile.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         profile.offers.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                         profile.seeks.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    // Check if profile matches skill filters
+    const matchesOfferedSkills = showOfferedSkills && profile.offers.length > 0;
+    const matchesSoughtSkills = showSoughtSkills && profile.seeks.length > 0;
+    
+    // If both skill filters are active, show profiles that have at least one type
+    if (showOfferedSkills && showSoughtSkills) {
+      return matchesSearch && (matchesOfferedSkills || matchesSoughtSkills);
+    }
+    // If only offered skills filter is active
+    if (showOfferedSkills && !showSoughtSkills) {
+      return matchesSearch && matchesOfferedSkills;
+    }
+    // If only sought skills filter is active
+    if (!showOfferedSkills && showSoughtSkills) {
+      return matchesSearch && matchesSoughtSkills;
+    }
+    // If neither filter is active, show all profiles that match search
+    return matchesSearch;
+  });
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.12),_transparent_25%),linear-gradient(180deg,_#090909_0%,_#050505_100%)] px-3 py-3 sm:px-5 sm:py-5">
@@ -108,75 +137,60 @@ export function PaginaRicercaPage() {
               Ricerca
             </h1>
 
-            <div className="relative mt-5">
-              <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
-              <input
-                type="text"
-                placeholder="Cerca per nome, skill o parola chiave..."
-                className="h-13 w-full rounded-2xl border border-zinc-800 bg-[#17181b] px-4 pr-12 text-sm text-white outline-none ring-0 placeholder:text-zinc-500 focus:border-orange-500/60"
-              />
-            </div>
+             <div className="relative mt-5">
+               <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+               <div className="flex items-center space-x-3">
+                 <button
+                   type="button"
+                   aria-pressed={showOfferedSkills}
+                   className={`flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors ${
+                     showOfferedSkills
+                       ? "border-orange-500/35 bg-orange-500/10 text-orange-300"
+                       : "border-zinc-800 bg-[#17181b] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                   }`}
+                   onClick={() => setShowOfferedSkills((value) => !value)}
+                 >
+                   <span
+                     className={`flex h-4 w-4 items-center justify-center rounded text-xs font-bold ${
+                       showOfferedSkills
+                         ? "bg-orange-500 text-black"
+                         : "border border-zinc-700 bg-transparent text-transparent"
+                     }`}
+                   >
+                     ✓
+                   </span>
+                   Skill offerte
+                 </button>
+                 <button
+                   type="button"
+                   aria-pressed={showSoughtSkills}
+                   className={`flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors ${
+                     showSoughtSkills
+                       ? "border-orange-500/35 bg-orange-500/10 text-orange-300"
+                       : "border-zinc-800 bg-[#17181b] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                   }`}
+                   onClick={() => setShowSoughtSkills((value) => !value)}
+                 >
+                   <span
+                     className={`flex h-4 w-4 items-center justify-center rounded text-xs font-bold ${
+                       showSoughtSkills
+                         ? "bg-orange-500 text-black"
+                         : "border border-zinc-700 bg-transparent text-transparent"
+                     }`}
+                   >
+                     ✓
+                   </span>
+                   Skill cercate
+                 </button>
+               </div>
+               <input
+                 type="text"
+                 placeholder="Cerca per nome, skill o parola chiave..."
+                 className="h-13 w-full rounded-2xl border border-zinc-800 bg-[#17181b] px-11 pl-12 text-sm text-white outline-none ring-0 placeholder:text-zinc-500 focus:border-orange-500/60"
+               />
+             </div>
 
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                type="button"
-                aria-pressed={showOfferedSkills}
-                className={`inline-flex h-11 items-center gap-2 rounded-xl border px-4 text-sm font-medium transition-colors ${
-                  showOfferedSkills
-                    ? "border-orange-500/35 bg-orange-500/10 text-orange-300"
-                    : "border-zinc-800 bg-[#17181b] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
-                }`}
-                onClick={() => setShowOfferedSkills((value) => !value)}
-              >
-                <span
-                  className={`flex h-5 w-5 items-center justify-center rounded text-xs font-bold ${
-                    showOfferedSkills
-                      ? "bg-orange-500 text-black"
-                      : "border border-zinc-700 bg-transparent text-transparent"
-                  }`}
-                >
-                  ✓
-                </span>
-                Skill offerte
-              </button>
-              <button
-                type="button"
-                aria-pressed={showSoughtSkills}
-                className={`inline-flex h-11 items-center gap-2 rounded-xl border px-4 text-sm font-medium transition-colors ${
-                  showSoughtSkills
-                    ? "border-orange-500/35 bg-orange-500/10 text-orange-300"
-                    : "border-zinc-800 bg-[#17181b] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
-                }`}
-                onClick={() => setShowSoughtSkills((value) => !value)}
-              >
-                <span
-                  className={`flex h-5 w-5 items-center justify-center rounded text-xs font-bold ${
-                    showSoughtSkills
-                      ? "bg-orange-500 text-black"
-                      : "border border-zinc-700 bg-transparent text-transparent"
-                  }`}
-                >
-                  ✓
-                </span>
-                Skill cercate
-              </button>
-              <button
-                type="button"
-                className="inline-flex h-11 min-w-[132px] items-center justify-between rounded-xl border border-zinc-800 bg-[#17181b] px-4 text-sm text-zinc-300"
-              >
-                Livello
-                <ChevronDown className="h-4 w-4 text-zinc-500" />
-              </button>
-              <button
-                type="button"
-                className="inline-flex h-11 min-w-[185px] items-center justify-between rounded-xl border border-zinc-800 bg-[#17181b] px-4 text-sm text-zinc-300"
-              >
-                Tutte le categorie
-                <ChevronDown className="h-4 w-4 text-zinc-500" />
-              </button>
-            </div>
-
-            <div className="mt-5 text-left text-sm text-zinc-500">Risultati trovati: 24</div>
+            <div className="mt-5 text-left text-sm text-zinc-500">Risultati trovati: {filteredProfiles.length}</div>
 
             <div className="mt-5 space-y-4">
               {profiles.map((profile) => (
