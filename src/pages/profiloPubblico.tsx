@@ -1,9 +1,32 @@
+import { useNavigate } from "react-router";
 import { useState } from "react";
 import { Search, MapPin } from "lucide-react";
 
 export default function ProfiloPubblico() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState("panoramica");
+  const [requestSent, setRequestSent] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
 
+  const [openMenu, setOpenMenu] = useState(false);
+
+  const handleRequestClick = () => {
+    if (!requestSent) {
+      setRequestSent(true);
+      setShowPopup(true);
+
+      setTimeout(() => {
+        setShowPopup(false);
+      }, 2500);
+    } else {
+      setShowPopup(true);
+
+      setTimeout(() => {
+        setShowPopup(false);
+        setRequestSent(false);
+      }, 3000);
+    }
+  };
   const skillsOfferte = [
     { name: "React" },
     { name: "Python" },
@@ -53,16 +76,50 @@ export default function ProfiloPubblico() {
 
             {/* BOTTONI */}
             <div className="flex gap-2">
-              <button className="px-4 py-2 text-sm bg-orange-500 hover:bg-orange-600 rounded-lg transition">
-                Invia richiesta
+              <button
+                onClick={handleRequestClick}
+                className={`px-4 py-2 text-sm rounded-lg transition ${
+                  requestSent
+                    ? "bg-green-600 hover:bg-green-700 text-white"
+                    : "bg-orange-500 hover:bg-orange-600 text-white"
+                }`} 
+              >
+                {requestSent
+                  ? "Richiesta inviata con successo"
+                  : "Invia richiesta"}
               </button>
-              <button className="px-3 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 rounded-lg transition">
-                ⋮
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setOpenMenu((v) => !v)}
+                  className="px-3 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 rounded-lg transition"
+                >
+                  ⋮
+                </button>
+                {openMenu && (
+                  <div className="absolute right-0 mt-2 w-40 bg-zinc-900 border border-zinc-700 rounded-xl shadow-lg overflow-hidden z-50">
+                    <button
+                      onClick={() => {
+                        alert("Utente bloccato 🔒");
+                        setOpenMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-zinc-800"
+                    >
+                      🔒 Blocca
+                    </button>
+                    <button
+                      onClick={() => {
+                        alert("Segnalazione inviata 🚩");
+                        setOpenMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-zinc-800 text-red-400"
+                    >
+                      🚩 Segnala
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-
           </div>
-
           {/* TAB */}
           <div className="flex gap-6 mt-6 border-b border-zinc-800">
             {[
@@ -115,7 +172,6 @@ export default function ProfiloPubblico() {
                 ))}
               </div>
             </div>
-
             <div className="bg-zinc-950 rounded-2xl border border-zinc-800 p-5">
               <h3 className="text-lg font-semibold mb-3">Skill cercate</h3>
               <div className="flex flex-wrap gap-2">
@@ -130,6 +186,18 @@ export default function ProfiloPubblico() {
               </div>
             </div>
 
+          </div>
+        )}
+        {/* POPUP INFO */}
+        {showPopup && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
+            <div className="bg-zinc-900 border border-orange-500 text-white px-6 py-4 rounded-2xl shadow-lg">
+              <p className="text-sm">
+                {requestSent
+                  ? "Invio richiesta completato con successo ✅"
+                  : "Richiesta annullata ❌"}
+              </p>
+            </div>
           </div>
         )}
 
@@ -204,12 +272,10 @@ export default function ProfiloPubblico() {
                   placeholder:text-orange-500/30
                 "
               />
-
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-3">
                 <Search size={18} className="text-orange-500" />
               </div>
             </div>
-
             <div className="bg-zinc-950 rounded-2xl border border-zinc-800 p-5">
               <h3 className="text-lg font-semibold mb-3">Skill cercate</h3>
               <div className="flex flex-wrap gap-2">
@@ -223,10 +289,8 @@ export default function ProfiloPubblico() {
                 ))}
               </div>
             </div>
-
           </div>
         )}
-
       </div>
     </div>
   );

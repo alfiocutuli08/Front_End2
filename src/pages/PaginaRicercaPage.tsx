@@ -9,6 +9,7 @@ import {
   User,
   Wrench,
 } from "lucide-react";
+import { useNavigate } from "react-router";
 
 const profiles = [
   {
@@ -45,6 +46,7 @@ const menuItems = [
 ];
 
 export function PaginaRicercaPage() {
+  const navigate = useNavigate();
   const [showOfferedSkills, setShowOfferedSkills] = useState(true);
   const [showSoughtSkills, setShowSoughtSkills] = useState(true);
 
@@ -233,6 +235,9 @@ export function PaginaRicercaPage() {
 
                   <div className="flex items-center justify-end">
                     <button
+                      onClick={() => {
+                        navigate("/card");
+                      }}
                       type="button"
                       className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-400 transition-colors hover:border-orange-500/35 hover:text-orange-300"
                     >

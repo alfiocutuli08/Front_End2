@@ -5,6 +5,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { PaginaRicercaPage } from "./pages/PaginaRicercaPage";
 import { CardPrincipalePage } from "./pages/CardPrincipalePage";
+import HomePages from "./pages/HomePages";
 import './App.css'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
             <Route path="register" element={<RegisterPage />} />
             <Route path="search" element={<PaginaRicercaPage />} />
             <Route path="card" element={<CardPrincipalePage />} />
+            <Route path="home" element={<HomePages />} />
           </Route>
         </Routes>
       </BrowserRouter>

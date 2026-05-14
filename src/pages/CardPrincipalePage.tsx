@@ -1,11 +1,13 @@
 import { ArrowRight, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useNavigate } from "react-router";
 
 const offeredSkills = ["React", "TypeScript", "Next.js"];
 const requestedSkills = ["Node.js", "Docker"];
 
 export function CardPrincipalePage() {
+  const navigate = useNavigate();
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.12),_transparent_28%),linear-gradient(180deg,_#0b0b0b_0%,_#050505_100%)] px-4 py-8 sm:px-8 lg:px-14">
       <div className="mx-auto flex min-h-[calc(100svh-4rem)] w-full max-w-6xl items-center justify-center rounded-[32px] border border-orange-500/15 bg-zinc-950/30 p-6 backdrop-blur-sm sm:p-10">
@@ -63,6 +65,9 @@ export function CardPrincipalePage() {
             </div>
 
             <Button
+              onClick={() => {
+                navigate("/public");
+              }}
               className="mt-8 h-12 w-full rounded-xl border border-orange-500 bg-transparent text-base font-semibold text-orange-400 hover:bg-orange-500 hover:text-black"
               variant="outline"
             >
