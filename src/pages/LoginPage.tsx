@@ -11,10 +11,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { api } from "@/lib/api";
+import { authService } from "@/lib/services";
+import { useAuth } from "@/lib/AuthContext";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -26,8 +28,8 @@ export function LoginPage() {
     setMessage("");
 
     try {
-      const { data } = await api.post("/auth/login", { email, password });
-      localStorage.setItem("auth_token", data.access_token);
+      const { data } = await authService.login({ email, password });
+      await login(data.access_token);
       navigate("/dashboard");
     } catch {
       setMessage("Credenziali non valide o backend non avviato.");

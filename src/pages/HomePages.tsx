@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router";
+import { useEffect, useState } from "react";
 import {
   Search,
   Bell,
@@ -10,11 +11,55 @@ import {
   TrendingUp,
   Users,
   BookOpen,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
+import { statsService, searchService } from "@/lib/services";
+import type { Stats, Match } from "@/lib/types";
 
 export default function HomePages() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [matches, setMatches] = useState<Match[] | null>(null);
+
+  useEffect(() => {
+    statsService.getHomeStats().then(({ data }) => setStats(data)).catch(() => {});
+    searchService.getMatches().then(({ data }) => setMatches(data)).catch(() => {});
+  }, []);
   const utenti = [
+    {
+      nome: "Luca Bianchi",
+      citta: "Milano, Italia",
+      livello: "Avanzato",
+      rating: "4.9",
+      offerte: ["React", "TypeScript", "UI Design"],
+      cercate: ["Docker", "Node.js"],
+      img: "https://i.pravatar.cc/300?img=12",
+    },
+    {
+      nome: "Marco Rossi",
+      citta: "Roma, Italia",
+      livello: "Intermedio",
+      rating: "4.7",
+      offerte: ["Python", "FastAPI", "SQLAlchemy"],
+      cercate: ["React", "Tailwind"],
+      img: "https://i.pravatar.cc/300?img=15",
+    },
+    {
+      nome: "Giulia Verdi",
+      citta: "Torino, Italia",
+      livello: "Avanzato",
+      rating: "5.0",
+      offerte: ["Figma", "UX Design", "Tailwind"],
+      cercate: ["PostgreSQL", "Backend"],
+      img: "https://i.pravatar.cc/300?img=32",
+    },
+  ];
+
+  const displayUsers = matches ?? [
     {
       nome: "Luca Bianchi",
       citta: "Milano, Italia",
@@ -80,25 +125,46 @@ export default function HomePages() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="w-11 h-11 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-500/10 transition-all"
-            >
-              <Bell size={18} />
-            </button>
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="w-11 h-11 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-500/10 transition-all"
-            >
-              <MessageCircle size={18} />
-            </button>
-            <button onClick={() => navigate("/profilo")} className="w-11 h-11 rounded-full overflow-hidden border-2 border-orange-500 ring-2 ring-orange-500/20 hover:ring-orange-500/40 transition-all">
-              <img
-                src="https://i.pravatar.cc/300?img=12"
-                alt="profile"
-                className="w-full h-full object-cover"
-              />
-            </button>
+            {user ? (
+              <>
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="w-11 h-11 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-500/10 transition-all"
+                >
+                  <Bell size={18} />
+                </button>
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="w-11 h-11 rounded-xl bg-zinc-900/80 border border-zinc-800 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 hover:shadow-lg hover:shadow-orange-500/10 transition-all"
+                >
+                  <MessageCircle size={18} />
+                </button>
+                <button onClick={() => navigate("/profilo")} className="w-11 h-11 rounded-full overflow-hidden border-2 border-orange-500 ring-2 ring-orange-500/20 hover:ring-orange-500/40 transition-all">
+                  <img
+                    src="https://i.pravatar.cc/300?img=12"
+                    alt="profile"
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="px-4 py-2 text-sm bg-zinc-900/80 border border-zinc-700 hover:border-orange-500 rounded-xl transition-all flex items-center gap-2"
+                >
+                  <LogIn size={16} />
+                  Accedi
+                </button>
+                <button
+                  onClick={() => navigate("/register")}
+                  className="px-4 py-2 text-sm bg-orange-500 hover:bg-orange-600 rounded-xl transition-all flex items-center gap-2"
+                >
+                  <UserPlus size={16} />
+                  Registrati
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -147,10 +213,10 @@ export default function HomePages() {
 
           <div className="grid grid-cols-2 gap-4">
             {[
-              { icon: Users, value: "240+", label: "Utenti attivi", delay: "0" },
-              { icon: TrendingUp, value: "1.2K", label: "Sessioni completate", delay: "100" },
-              { icon: BookOpen, value: "95+", label: "Skill disponibili", delay: "200" },
-              { icon: Star, value: "4.9", label: "Rating medio", delay: "300" },
+              { icon: Users, value: stats ? `${stats.utenti_attivi}+` : "...", label: "Utenti attivi" },
+              { icon: TrendingUp, value: stats ? `${stats.sessioni_completate}` : "...", label: "Sessioni completate" },
+              { icon: BookOpen, value: stats ? `${stats.skill_disponibili}+` : "...", label: "Skill disponibili" },
+              { icon: Star, value: stats ? `${stats.rating_medio}` : "...", label: "Rating medio" },
             ].map((stat) => (
               <div
                 key={stat.label}
@@ -187,7 +253,7 @@ export default function HomePages() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {utenti.map((utente) => (
+          {displayUsers.map((utente) => (
             <div
               key={utente.nome}
               className="group bg-zinc-950/60 border border-zinc-800 rounded-3xl p-6 hover:border-orange-500/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-500/5 backdrop-blur-sm relative overflow-hidden"

@@ -11,10 +11,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { api } from "@/lib/api";
+import { authService } from "@/lib/services";
+import { useAuth } from "@/lib/AuthContext";
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,8 +29,8 @@ export function RegisterPage() {
     setMessage("");
 
     try {
-      const { data } = await api.post("/auth/register", { name, email, password });
-      localStorage.setItem("auth_token", data.access_token);
+      const { data } = await authService.register({ name, email, password });
+      await login(data.access_token);
       navigate("/dashboard");
     } catch {
       setMessage("Registrazione non riuscita. Controlla i dati o avvia il backend.");

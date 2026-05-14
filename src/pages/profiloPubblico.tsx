@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, MapPin } from "lucide-react";
+import { requestService, blockService, reportService, userService } from "@/lib/services";
+import type { UserProfile, Request } from "@/lib/types";
 
 export default function ProfiloPubblico() {
   const navigate = useNavigate();
@@ -8,6 +10,8 @@ export default function ProfiloPubblico() {
   const [status, setStatus] = useState<"idle" | "pending" | "accepted" | "declined">("idle");
   const [showPopup, setShowPopup] = useState(false);
   const [popupMsg, setPopupMsg] = useState("");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [requestId, setRequestId] = useState<number | null>(null);
 
   const [openMenu, setOpenMenu] = useState(false);
 
@@ -17,16 +21,26 @@ export default function ProfiloPubblico() {
   const [reportReason, setReportReason] = useState("");
   const [showReportConfirm, setShowReportConfirm] = useState(false);
 
+  const userId = Number(new URLSearchParams(window.location.search).get("id")) || 1;
+
+  useEffect(() => {
+    userService.getPublicProfile(userId).then(({ data }) => setProfile(data)).catch(() => {});
+    blockService.getBlockedUsers().then(({ data }) => setIsBlocked(data.includes(userId))).catch(() => {});
+  }, [userId]);
+
   const handleRequestClick = () => {
     if (isBlocked) return;
 
     if (status === "idle") {
       setStatus("pending");
+      requestService.sendRequest(userId).then(({ data }) => setRequestId(data.id)).catch(() => {});
       setPopupMsg("Invio richiesta completato con successo ✅");
       setShowPopup(true);
 
       setTimeout(() => setShowPopup(false), 2500);
     } else if (status === "pending") {
+      if (requestId) requestService.cancelRequest(requestId).catch(() => {});
+      setRequestId(null);
       setPopupMsg("Richiesta annullata ❌");
       setShowPopup(true);
 
@@ -36,20 +50,15 @@ export default function ProfiloPubblico() {
       }, 3000);
     }
   };
-  const skillsOfferte = [
-    { name: "React" },
-    { name: "Python" },
-    { name: "UI Design" },
+  const skillsOfferte = profile?.skills?.filter((s) => s.category === "offer").map((s) => s.name) ?? [
+    "React", "Python", "UI Design",
   ];
 
-  const skillsCercate = [
-    { name: "Node.js" },
-    { name: "Docker" },
-    { name: "PostgreSQL" },
-    { name: "System Design" },
+  const skillsCercate = profile?.skills?.filter((s) => s.category === "search").map((s) => s.name) ?? [
+    "Node.js", "Docker", "PostgreSQL", "System Design",
   ];
 
-  const livello = "Intermedio";
+  const livello = profile?.level ?? "Intermedio";
 
   return (
     <div className="min-h-screen bg-black p-6 flex justify-center text-white">
@@ -63,7 +72,7 @@ export default function ProfiloPubblico() {
             {/* FOTO */}
             <div className="w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-orange-500 bg-zinc-900">
               <img
-                src="https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg"
+                src={profile?.image_url ?? "https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg"}
                 className="w-full h-full object-cover"
                 alt="profile"
               />
@@ -71,15 +80,15 @@ export default function ProfiloPubblico() {
 
             {/* INFO */}
             <div className="flex-1 text-left">
-              <h2 className="text-3xl font-semibold">Username</h2>
+              <h2 className="text-3xl font-semibold">{profile?.name ?? "Username"}</h2>
 
               <div className="flex items-center gap-2 text-zinc-400 text-sm mt-1">
                 <MapPin size={16} className="text-orange-500" />
-                <span>Sicilia, Italia</span>
+                <span>{profile?.location ?? "Sicilia, Italia"}</span>
               </div>
 
               <p className="text-zinc-400 text-sm mt-2">
-                Sviluppatore Frontend con esperienza in React e TypeScript.
+                {profile?.bio ?? "Sviluppatore Frontend con esperienza in React e TypeScript."}
               </p>
             </div>
 
@@ -122,6 +131,7 @@ export default function ProfiloPubblico() {
                       <button
                         onClick={() => {
                           setOpenMenu(false);
+                          blockService.unblockUser(userId).catch(() => {});
                           setIsBlocked(false);
                         }}
                         className="w-full text-left px-4 py-2 text-sm hover:bg-zinc-800"
@@ -132,6 +142,7 @@ export default function ProfiloPubblico() {
                       <button
                         onClick={() => {
                           setOpenMenu(false);
+                          blockService.blockUser(userId).catch(() => {});
                           setIsBlocked(true);
                           setShowBlockConfirm(true);
                           setTimeout(() => setShowBlockConfirm(false), 2500);
@@ -185,7 +196,7 @@ export default function ProfiloPubblico() {
             <div className="bg-zinc-950 rounded-2xl border border-zinc-800 p-5">
               <h3 className="text-lg font-semibold mb-3">Bio</h3>
               <p className="text-zinc-400 text-sm">
-                Mi chiamo Luca e sono uno sviluppatore frontend specializzato in React e Next.js.
+                {profile?.bio ?? "Mi chiamo Luca e sono uno sviluppatore frontend specializzato in React e Next.js."}
               </p>
             </div>
 
@@ -265,6 +276,7 @@ export default function ProfiloPubblico() {
                 </button>
                 <button
                   onClick={() => {
+                    reportService.reportUser(userId, reportReason).catch(() => {});
                     setShowReportPopup(false);
                     setReportReason("");
                     setShowReportConfirm(true);
