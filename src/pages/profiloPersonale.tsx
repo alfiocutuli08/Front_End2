@@ -141,48 +141,48 @@ export default function profiloPersonale() {
            {/* SEZIONE SKILL */}
            <div className="lg:col-span-2 space-y-4">
              {/* RICERCA E FILTRI */}
-             <div className="relative">
-               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-500" />
-               <div className="flex items-center space-x-3">
-                 <label className="flex items-center gap-2 text-zinc-300 cursor-pointer">
-                   <input
-                     type="radio"
-                     name="filterType"
-                     checked={filterType === "tutti"}
-                     onChange={() => setFilterType("tutti")}
-                     className="accent-orange-500"
-                   />
-                   Tutti
-                 </label>
-                 <label className="flex items-center gap-2 text-zinc-300 cursor-pointer">
-                   <input
-                     type="radio"
-                     name="filterType"
-                     checked={filterType === "offer"}
-                     onChange={() => setFilterType("offer")}
-                     className="accent-orange-500"
-                   />
-                   Offerte
-                 </label>
-                 <label className="flex items-center gap-2 text-zinc-300 cursor-pointer">
-                   <input
-                     type="radio"
-                     name="filterType"
-                     checked={filterType === "search"}
-                     onChange={() => setFilterType("search")}
-                     className="accent-orange-500"
-                   />
-                   Cercate
-                 </label>
+              <div className="relative">
+                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cerca skill..."
+                  className="w-full bg-black border-2 border-orange-500 rounded-2xl p-3 pl-11 pr-72 text-white outline-none focus:ring-2 focus:ring-orange-400 placeholder:text-orange-500/30"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                  <label className="flex items-center gap-1 text-zinc-300 cursor-pointer text-sm whitespace-nowrap">
+                    <input
+                      type="radio"
+                      name="filterType"
+                      checked={filterType === "tutti"}
+                      onChange={() => setFilterType("tutti")}
+                      className="accent-orange-500"
+                    />
+                    Tutti
+                  </label>
+                  <label className="flex items-center gap-1 text-zinc-300 cursor-pointer text-sm whitespace-nowrap">
+                    <input
+                      type="radio"
+                      name="filterType"
+                      checked={filterType === "offer"}
+                      onChange={() => setFilterType("offer")}
+                      className="accent-orange-500"
+                    />
+                    Offerte
+                  </label>
+                  <label className="flex items-center gap-1 text-zinc-300 cursor-pointer text-sm whitespace-nowrap">
+                    <input
+                      type="radio"
+                      name="filterType"
+                      checked={filterType === "search"}
+                      onChange={() => setFilterType("search")}
+                      className="accent-orange-500"
+                    />
+                    Cercate
+                  </label>
+               </div>
               </div>
-               <input
-                 type="text"
-                 value={searchQuery}
-                 onChange={(e) => setSearchQuery(e.target.value)}
-                 placeholder="Cerca skill..."
-                 className="w-full bg-black border-2 border-orange-500 rounded-2xl p-3 pl-11 pr-44 text-white outline-none focus:ring-2 focus:ring-orange-400 placeholder:text-orange-500/30"
-               />
-             </div>
 
             {/* SKILL OFFERTE */}
             {(filterType === "tutti" || filterType === "offer") && (
