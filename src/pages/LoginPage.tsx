@@ -30,7 +30,7 @@ export function LoginPage() {
     try {
       const { data } = await authService.login({ email, password });
       await login(data);
-      navigate("/dashboard");
+      navigate("/profile");
     } catch {
       setMessage("Credenziali non valide o backend non avviato.");
     } finally {

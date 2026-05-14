@@ -29,7 +29,7 @@ export default function Login() {
     try {
       const { data } = await api.post("/auth/login", { email, password });
       localStorage.setItem("auth_token", data.access_token);
-      navigate("/dashboard");
+      navigate("/profile");
     } catch {
       setMessage("Credenziali non valide o backend non avviato.");
     } finally {

@@ -137,58 +137,60 @@ export function PaginaRicercaPage() {
               Ricerca
             </h1>
 
-             <div className="relative mt-5">
-               <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
-               <div className="flex items-center space-x-3">
-                 <button
-                   type="button"
-                   aria-pressed={showOfferedSkills}
-                   className={`flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors ${
-                     showOfferedSkills
-                       ? "border-orange-500/35 bg-orange-500/10 text-orange-300"
-                       : "border-zinc-800 bg-[#17181b] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
-                   }`}
-                   onClick={() => setShowOfferedSkills((value) => !value)}
-                 >
-                   <span
-                     className={`flex h-4 w-4 items-center justify-center rounded text-xs font-bold ${
-                       showOfferedSkills
-                         ? "bg-orange-500 text-black"
-                         : "border border-zinc-700 bg-transparent text-transparent"
-                     }`}
-                   >
-                     ✓
-                   </span>
-                   Skill offerte
-                 </button>
-                 <button
-                   type="button"
-                   aria-pressed={showSoughtSkills}
-                   className={`flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors ${
-                     showSoughtSkills
-                       ? "border-orange-500/35 bg-orange-500/10 text-orange-300"
-                       : "border-zinc-800 bg-[#17181b] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
-                   }`}
-                   onClick={() => setShowSoughtSkills((value) => !value)}
-                 >
-                   <span
-                     className={`flex h-4 w-4 items-center justify-center rounded text-xs font-bold ${
-                       showSoughtSkills
-                         ? "bg-orange-500 text-black"
-                         : "border border-zinc-700 bg-transparent text-transparent"
-                     }`}
-                   >
-                     ✓
-                   </span>
-                   Skill cercate
-                 </button>
-               </div>
-               <input
-                 type="text"
-                 placeholder="Cerca per nome, skill o parola chiave..."
-                 className="h-13 w-full rounded-2xl border border-zinc-800 bg-[#17181b] px-11 pl-12 text-sm text-white outline-none ring-0 placeholder:text-zinc-500 focus:border-orange-500/60"
-               />
-             </div>
+             <div className="mt-5 space-y-3">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+                  <input
+                    type="text"
+                    placeholder="Cerca per nome, skill o parola chiave..."
+                    className="h-13 w-full rounded-2xl border border-zinc-800 bg-[#17181b] pl-12 pr-4 text-sm text-white outline-none ring-0 placeholder:text-zinc-500 focus:border-orange-500/60"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    aria-pressed={showOfferedSkills}
+                    className={`flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors ${
+                      showOfferedSkills
+                        ? "border-orange-500/35 bg-orange-500/10 text-orange-300"
+                        : "border-zinc-800 bg-[#17181b] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                    }`}
+                    onClick={() => setShowOfferedSkills((value) => !value)}
+                  >
+                    <span
+                      className={`flex h-4 w-4 items-center justify-center rounded text-xs font-bold ${
+                        showOfferedSkills
+                          ? "bg-orange-500 text-black"
+                          : "border border-zinc-700 bg-transparent text-transparent"
+                      }`}
+                    >
+                      ✓
+                    </span>
+                    Skill offerte
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={showSoughtSkills}
+                    className={`flex h-9 items-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors ${
+                      showSoughtSkills
+                        ? "border-orange-500/35 bg-orange-500/10 text-orange-300"
+                        : "border-zinc-800 bg-[#17181b] text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                    }`}
+                    onClick={() => setShowSoughtSkills((value) => !value)}
+                  >
+                    <span
+                      className={`flex h-4 w-4 items-center justify-center rounded text-xs font-bold ${
+                        showSoughtSkills
+                          ? "bg-orange-500 text-black"
+                          : "border border-zinc-700 bg-transparent text-transparent"
+                      }`}
+                    >
+                      ✓
+                    </span>
+                    Skill cercate
+                  </button>
+                </div>
+              </div>
 
             <div className="mt-5 text-left text-sm text-zinc-500">Risultati trovati: {filteredProfiles.length}</div>
 

@@ -30,7 +30,7 @@ export default function Register() {
     try {
       const { data } = await api.post("/auth/register", { name, email, password });
       localStorage.setItem("auth_token", data.access_token);
-      navigate("/dashboard");
+      navigate("/profile");
     } catch {
       setMessage("Registrazione non riuscita. Controlla i dati o avvia il backend.");
     } finally {

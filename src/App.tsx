@@ -9,7 +9,6 @@ import { PaginaRicercaPage } from "./pages/PaginaRicercaPage";
 import { CardPrincipalePage } from "./pages/CardPrincipalePage";
 import HomePages from "./pages/HomePages";
 import Richieste from "./pages/pagineRichieste";
-import { DashboardPage } from "./pages/DashboardPage";
 import './App.css'
 
 function App() {
@@ -25,7 +24,6 @@ function App() {
             <Route path="register" element={<RegisterPage />} />
             <Route path="search" element={<PaginaRicercaPage />} />
             <Route path="card" element={<CardPrincipalePage />} />
-            <Route path="dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="richieste" element={<ProtectedRoute><Richieste /></ProtectedRoute>} />
           </Route>
         </Routes>
