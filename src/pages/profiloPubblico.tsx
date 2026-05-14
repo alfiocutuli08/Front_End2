@@ -11,7 +11,15 @@ export default function ProfiloPubblico() {
 
   const [openMenu, setOpenMenu] = useState(false);
 
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [showReportPopup, setShowReportPopup] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [showReportConfirm, setShowReportConfirm] = useState(false);
+
   const handleRequestClick = () => {
+    if (isBlocked) return;
+
     if (status === "idle") {
       setStatus("pending");
       setPopupMsg("Invio richiesta completato con successo ✅");
@@ -80,22 +88,26 @@ export default function ProfiloPubblico() {
               <button
                 onClick={handleRequestClick}
                 className={`px-4 py-2 text-sm rounded-lg transition ${
-                  status === "idle"
-                    ? "bg-orange-500 hover:bg-orange-600 text-white"
-                    : status === "pending"
-                      ? "bg-yellow-600 hover:bg-yellow-700 text-white"
-                      : status === "accepted"
-                        ? "bg-green-600 hover:bg-green-700 text-white"
-                        : "bg-red-600 hover:bg-red-700 text-white"
+                  isBlocked
+                    ? "bg-red-600 text-white cursor-not-allowed"
+                    : status === "idle"
+                      ? "bg-orange-500 hover:bg-orange-600 text-white"
+                      : status === "pending"
+                        ? "bg-yellow-600 hover:bg-yellow-700 text-white"
+                        : status === "accepted"
+                          ? "bg-green-600 hover:bg-green-700 text-white"
+                          : "bg-red-600 hover:bg-red-700 text-white"
                 }`} 
               >
-                {status === "idle"
-                  ? "Invia richiesta"
-                  : status === "pending"
-                    ? "In attesa di risposta..."
-                    : status === "accepted"
-                      ? "Richiesta accettata ✅"
-                      : "Richiesta declinata ❌"}
+                {isBlocked
+                  ? "Utente bloccato 🔒"
+                  : status === "idle"
+                    ? "Invia richiesta"
+                    : status === "pending"
+                      ? "In attesa di risposta..."
+                      : status === "accepted"
+                        ? "Richiesta accettata ✅"
+                        : "Richiesta declinata ❌"}
               </button>
               <div className="relative">
                 <button
@@ -106,19 +118,33 @@ export default function ProfiloPubblico() {
                 </button>
                 {openMenu && (
                   <div className="absolute right-0 mt-2 w-40 bg-zinc-900 border border-zinc-700 rounded-xl shadow-lg overflow-hidden z-50">
+                    {isBlocked ? (
+                      <button
+                        onClick={() => {
+                          setOpenMenu(false);
+                          setIsBlocked(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-zinc-800"
+                      >
+                        🔓 Sblocca
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setOpenMenu(false);
+                          setIsBlocked(true);
+                          setShowBlockConfirm(true);
+                          setTimeout(() => setShowBlockConfirm(false), 2500);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-zinc-800"
+                      >
+                        🔒 Blocca
+                      </button>
+                    )}
                     <button
                       onClick={() => {
-                        alert("Utente bloccato 🔒");
                         setOpenMenu(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-zinc-800"
-                    >
-                      🔒 Blocca
-                    </button>
-                    <button
-                      onClick={() => {
-                        alert("Segnalazione inviata 🚩");
-                        setOpenMenu(false);
+                        setShowReportPopup(true);
                       }}
                       className="w-full text-left px-4 py-2 text-sm hover:bg-zinc-800 text-red-400"
                     >
@@ -202,6 +228,62 @@ export default function ProfiloPubblico() {
           <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
             <div className="bg-zinc-900 border border-orange-500 text-white px-6 py-4 rounded-2xl shadow-lg">
               <p className="text-sm">{popupMsg}</p>
+            </div>
+          </div>
+        )}
+
+        {/* POPUP BLOCCO CONFERMA */}
+        {showBlockConfirm && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
+            <div className="bg-zinc-900 border border-orange-500 text-white px-6 py-4 rounded-2xl shadow-lg">
+              <p className="text-sm">Utente bloccato 🔒</p>
+            </div>
+          </div>
+        )}
+
+        {/* POPUP SEGNALA */}
+        {showReportPopup && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
+            <div className="bg-zinc-900 border border-orange-500 p-6 rounded-2xl text-white w-full max-w-md mx-4 shadow-lg">
+              <h3 className="text-lg font-semibold mb-4">Segnala utente 🚩</h3>
+              <textarea
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                placeholder="Inserisci il motivo della segnalazione..."
+                rows={4}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-white text-sm outline-none focus:border-orange-500 resize-none"
+              />
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  onClick={() => {
+                    setShowReportPopup(false);
+                    setReportReason("");
+                  }}
+                  className="px-4 py-2 text-sm bg-zinc-700 hover:bg-zinc-600 rounded-lg transition"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={() => {
+                    setShowReportPopup(false);
+                    setReportReason("");
+                    setShowReportConfirm(true);
+                    setTimeout(() => setShowReportConfirm(false), 2500);
+                  }}
+                  className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 rounded-lg transition"
+                >
+                  Invia segnalazione
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* POPUP SEGNALAZIONE INVIATA */}
+        {showReportConfirm && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
+            <div className="bg-zinc-900 border border-orange-500 text-white px-6 py-4 rounded-2xl shadow-lg">
+              <p className="text-sm">Segnalazione inviata 🚩</p>
             </div>
           </div>
         )}
