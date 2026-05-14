@@ -5,25 +5,26 @@ import { Search, MapPin } from "lucide-react";
 export default function ProfiloPubblico() {
   const navigate = useNavigate();
   const [tab, setTab] = useState("panoramica");
-  const [requestSent, setRequestSent] = useState(false);
+  const [status, setStatus] = useState<"idle" | "pending" | "accepted" | "declined">("idle");
   const [showPopup, setShowPopup] = useState(false);
+  const [popupMsg, setPopupMsg] = useState("");
 
   const [openMenu, setOpenMenu] = useState(false);
 
   const handleRequestClick = () => {
-    if (!requestSent) {
-      setRequestSent(true);
+    if (status === "idle") {
+      setStatus("pending");
+      setPopupMsg("Invio richiesta completato con successo ✅");
+      setShowPopup(true);
+
+      setTimeout(() => setShowPopup(false), 2500);
+    } else if (status === "pending") {
+      setPopupMsg("Richiesta annullata ❌");
       setShowPopup(true);
 
       setTimeout(() => {
         setShowPopup(false);
-      }, 2500);
-    } else {
-      setShowPopup(true);
-
-      setTimeout(() => {
-        setShowPopup(false);
-        setRequestSent(false);
+        setStatus("idle");
       }, 3000);
     }
   };
@@ -79,14 +80,22 @@ export default function ProfiloPubblico() {
               <button
                 onClick={handleRequestClick}
                 className={`px-4 py-2 text-sm rounded-lg transition ${
-                  requestSent
-                    ? "bg-green-600 hover:bg-green-700 text-white"
-                    : "bg-orange-500 hover:bg-orange-600 text-white"
+                  status === "idle"
+                    ? "bg-orange-500 hover:bg-orange-600 text-white"
+                    : status === "pending"
+                      ? "bg-yellow-600 hover:bg-yellow-700 text-white"
+                      : status === "accepted"
+                        ? "bg-green-600 hover:bg-green-700 text-white"
+                        : "bg-red-600 hover:bg-red-700 text-white"
                 }`} 
               >
-                {requestSent
-                  ? "Richiesta inviata con successo"
-                  : "Invia richiesta"}
+                {status === "idle"
+                  ? "Invia richiesta"
+                  : status === "pending"
+                    ? "In attesa di risposta..."
+                    : status === "accepted"
+                      ? "Richiesta accettata ✅"
+                      : "Richiesta declinata ❌"}
               </button>
               <div className="relative">
                 <button
@@ -192,11 +201,7 @@ export default function ProfiloPubblico() {
         {showPopup && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
             <div className="bg-zinc-900 border border-orange-500 text-white px-6 py-4 rounded-2xl shadow-lg">
-              <p className="text-sm">
-                {requestSent
-                  ? "Invio richiesta completato con successo ✅"
-                  : "Richiesta annullata ❌"}
-              </p>
+              <p className="text-sm">{popupMsg}</p>
             </div>
           </div>
         )}
@@ -225,12 +230,10 @@ export default function ProfiloPubblico() {
                   placeholder:text-orange-500/30
                 "
               />
-
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-3">
                 <Search size={18} className="text-orange-500" />
               </div>
             </div>
-
             <div className="bg-zinc-950 rounded-2xl border border-zinc-800 p-5">
               <h3 className="text-lg font-semibold mb-3">Skill offerte</h3>
               <div className="flex flex-wrap gap-2">
