@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { statsService, requestService, searchService } from "@/lib/services";
+import { getAvatarUrl } from "@/lib/utils";
 import type { Stats, Match } from "@/lib/types";
 
 export default function HomePages() {
@@ -93,7 +94,7 @@ export default function HomePages() {
                   <MessageCircle size={18} />
                 </button>
                 <button onClick={() => navigate("/profile")} className="w-11 h-11 rounded-full overflow-hidden border-2 border-orange-500 ring-2 ring-orange-500/20 hover:ring-orange-500/40 transition-all">
-                  <img src="https://i.pravatar.cc/300?img=12" alt="profile" className="w-full h-full object-cover" />
+                  <img src={getAvatarUrl(user?.id, user?.image_url)} alt="profile" className="w-full h-full object-cover" />
                 </button>
               </>
             ) : (
@@ -172,7 +173,7 @@ export default function HomePages() {
 
               <div className="flex items-start gap-4 relative">
                 <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-orange-500 ring-2 ring-orange-500/20 shrink-0">
-                  <img src={(utente as any).image_url || `https://i.pravatar.cc/300?img=${idx + 12}`} alt={utente.name} className="w-full h-full object-cover" />
+                  <img src={getAvatarUrl((utente as any).id, (utente as any).image_url)} alt={utente.name} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xl font-semibold truncate">{utente.name}</h4>

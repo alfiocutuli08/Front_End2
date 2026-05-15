@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLocation, useNavigate } from "react-router";
 import { feedbackService } from "@/lib/services";
+import { getAvatarUrl } from "@/lib/utils";
 import type { Feedback, Match } from "@/lib/types";
 
 export function CardPrincipalePage() {
@@ -12,7 +13,7 @@ export function CardPrincipalePage() {
   const profile = (location.state as { profile: Match & { description?: string } })?.profile;
 
   const name = profile?.name ?? "Luca Bianchi";
-  const image = profile?.image_url || "https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg";
+  const image = getAvatarUrl(profile?.id, profile?.image_url);
   const locationText = profile?.location ?? "Milano, Italia";
   const description = profile?.description ?? "Sviluppatore Frontend con esperienza in React e Next.js.";
   const offeredSkills = profile?.offerte ?? ["React", "TypeScript", "Next.js"];
@@ -129,7 +130,7 @@ export function CardPrincipalePage() {
 
             <Button
               onClick={() => {
-                navigate("/public", { state: { profile } });
+                navigate(`/public?id=${profile?.id}`, { state: { profile } });
               }}
               className="mt-6 h-12 w-full rounded-xl border border-orange-500 bg-transparent text-base font-semibold text-orange-400 hover:bg-orange-500 hover:text-black"
               variant="outline"

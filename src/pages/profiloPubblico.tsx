@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Ban, Flag, MapPin, Search, Star } from "lucide-react";
 import { blockService, feedbackService, reportService, requestService, userService } from "@/lib/services";
+import { getAvatarUrl } from "@/lib/utils";
 import type { User, Feedback, UserSkill } from "@/lib/types";
 
 export default function ProfiloPubblico() {
@@ -106,7 +107,7 @@ export default function ProfiloPubblico() {
         <div className="bg-zinc-950 rounded-3xl border border-orange-500 p-6 shadow-[0_0_20px_rgba(249,115,22,0.15)]">
           <div className="flex flex-col md:flex-row md:items-start gap-6">
             <div className="w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-orange-500 bg-zinc-900">
-              <img src="https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg" className="w-full h-full object-cover" alt="profile" />
+              <img src={getAvatarUrl(profile?.id, profile?.image_url)} className="w-full h-full object-cover" alt="profile" />
             </div>
 
             <div className="flex-1 text-left">

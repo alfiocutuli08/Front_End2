@@ -13,6 +13,7 @@ import {
 import { useNavigate } from "react-router";
 import { useAuth } from "@/lib/AuthContext";
 import { requestService, feedbackService } from "@/lib/services";
+import { getAvatarUrl } from "@/lib/utils";
 import type { Request } from "@/lib/types";
 
 const menuItems = [
@@ -135,7 +136,7 @@ export default function Richieste() {
           <div className="border-t border-zinc-900 p-4">
             {user ? (
               <button type="button" onClick={() => navigate("/profile")} className="flex w-full items-center gap-3 rounded-2xl bg-zinc-950 px-3 py-3 hover:bg-zinc-900 transition-colors">
-                <img src={user.image_url || "https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg"} alt={user.name} className="h-10 w-10 rounded-full object-cover" />
+                <img src={getAvatarUrl(user.id, user.image_url)} alt={user.name} className="h-10 w-10 rounded-full object-cover" />
                 <div className="min-w-0 text-left">
                   <div className="truncate text-sm font-medium text-white">{user.name}</div>
                   <div className="text-xs text-zinc-500">Profilo attivo</div>
@@ -174,7 +175,7 @@ export default function Richieste() {
                 {incoming.map((req) => (
                   <div key={req.id} className="flex items-center justify-between bg-[#17181b] border border-zinc-800 hover:border-orange-500/30 transition rounded-2xl p-4">
                     <div className="flex items-center gap-4">
-                      <img src="https://i.pravatar.cc/150?img=32" alt="" className="w-12 h-12 rounded-full object-cover" />
+                      <img src={getAvatarUrl(req.sender_id)} alt="" className="w-12 h-12 rounded-full object-cover" />
                       <div>
                         <h3 className="font-semibold text-white">{req.sender_name || "Utente"}</h3>
                         <p className="text-xs text-zinc-500">{new Date(req.created_at).toLocaleDateString()}</p>
@@ -209,7 +210,7 @@ export default function Richieste() {
                 {outgoing.map((req) => (
                   <div key={req.id} className="flex items-center justify-between bg-[#17181b] border border-zinc-800 hover:border-orange-500/30 transition rounded-2xl p-4">
                     <div className="flex items-center gap-4">
-                      <img src="https://i.pravatar.cc/150?img=15" alt="" className="w-12 h-12 rounded-full object-cover" />
+                      <img src={getAvatarUrl(req.receiver_id)} alt="" className="w-12 h-12 rounded-full object-cover" />
                       <div>
                         <h3 className="font-semibold text-white">{req.receiver_name || "Utente"}</h3>
                         <p className="text-xs text-zinc-500">{new Date(req.created_at).toLocaleDateString()}</p>

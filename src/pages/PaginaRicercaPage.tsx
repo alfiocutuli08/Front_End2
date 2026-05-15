@@ -13,6 +13,7 @@ import {
 import { useNavigate } from "react-router";
 import { useAuth } from "@/lib/AuthContext";
 import { feedbackService, requestService, searchService } from "@/lib/services";
+import { getAvatarUrl } from "@/lib/utils";
 import type { Match } from "@/lib/types";
 
 const fallbackProfiles: (Match & { description?: string })[] = [
@@ -159,7 +160,7 @@ export function PaginaRicercaPage() {
           <div className="border-t border-zinc-900 p-4">
             {user ? (
               <button type="button" onClick={() => navigate("/profile")} className="flex w-full items-center gap-3 rounded-2xl bg-zinc-950 px-3 py-3 hover:bg-zinc-900 transition-colors">
-                <img src={user.image_url || "https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg"} alt={user.name} className="h-10 w-10 rounded-full object-cover" />
+                <img src={getAvatarUrl(user.id, user.image_url)} alt={user.name} className="h-10 w-10 rounded-full object-cover" />
                 <div className="min-w-0 text-left">
                   <div className="truncate text-sm font-medium text-white">{user.name}</div>
                   <div className="text-xs text-zinc-500">Profilo attivo</div>
@@ -211,7 +212,7 @@ export function PaginaRicercaPage() {
               {filteredProfiles.map((profile, idx) => (
                 <article key={profile.name + idx} className="grid gap-4 rounded-[24px] border border-zinc-800 bg-[#17181b] p-4 transition-colors hover:border-orange-500/30 sm:grid-cols-[1.6fr_1fr_auto] sm:p-5">
                   <div className="flex gap-4">
-                    <img src={profile.image_url || "https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg"} alt={profile.name} className="h-18 w-18 shrink-0 rounded-full object-cover" />
+                    <img src={getAvatarUrl(profile.id, profile.image_url)} alt={profile.name} className="h-18 w-18 shrink-0 rounded-full object-cover" />
                     <div className="min-w-0 text-left">
                       <h2 className="m-0 text-[1.85rem] font-semibold leading-tight tracking-[-0.03em] text-white">{profile.name}</h2>
                       <div className="mt-1 flex items-center gap-1.5 text-sm text-zinc-500">

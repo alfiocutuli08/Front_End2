@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { LogOut, Search, Star } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { authService, feedbackService, skillService, userSkillService } from "@/lib/services";
+import { getAvatarUrl } from "@/lib/utils";
 import type { Feedback, Skill, UserSkill } from "@/lib/types";
 
 export default function profiloPersonale() {
@@ -96,7 +97,7 @@ export default function profiloPersonale() {
           <div className="bg-black rounded-3xl border border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.1)] p-6 lg:col-span-1">
             <div className="flex flex-col items-center text-center">
               <div className="w-32 h-32 rounded-full bg-zinc-900 flex items-center justify-center overflow-hidden border-4 border-orange-500">
-                <img src={user?.image_url || "https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg"} alt="profile" className="w-full h-full object-cover" />
+                <img src={getAvatarUrl(user?.id, user?.image_url)} alt="profile" className="w-full h-full object-cover" />
               </div>
               <h1 className="text-3xl font-semibold mt-4 text-white">{user?.name ?? "Username"}</h1>
 
