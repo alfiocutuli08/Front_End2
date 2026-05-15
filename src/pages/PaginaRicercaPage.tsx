@@ -188,7 +188,7 @@ export function PaginaRicercaPage() {
 
                   <div className="space-y-4 text-left">
                     <div>
-                      <div className="text-sm font-semibold text-zinc-200">Offre</div>
+                      <div className="text-sm font-semibold text-white">Offre</div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {(profile.offerte ?? []).map((skill) => (
                           <span key={skill} className="rounded-xl border border-emerald-500/20 bg-emerald-950/70 px-3 py-1.5 text-xs font-medium text-emerald-200">{skill}</span>
@@ -196,7 +196,7 @@ export function PaginaRicercaPage() {
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-zinc-200">Cerca</div>
+                      <div className="text-sm font-semibold text-white">Cerca</div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {(profile.cercate ?? []).map((skill) => (
                           <span key={skill} className="rounded-xl border border-indigo-500/20 bg-indigo-950/70 px-3 py-1.5 text-xs font-medium text-indigo-200">{skill}</span>

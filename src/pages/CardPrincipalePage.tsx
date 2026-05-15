@@ -52,7 +52,7 @@ export function CardPrincipalePage() {
             </div>
 
             <div className="mt-6 border-t border-zinc-800 pt-5">
-              <h2 className="text-lg font-semibold text-zinc-100">Offre</h2>
+              <h2 className="text-lg font-semibold text-white">Offre</h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {offeredSkills.map((skill) => (
                   <span
@@ -66,7 +66,7 @@ export function CardPrincipalePage() {
             </div>
 
             <div className="mt-5">
-              <h2 className="text-lg font-semibold text-zinc-100">Cerca</h2>
+              <h2 className="text-lg font-semibold text-white">Cerca</h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {requestedSkills.map((skill) => (
                   <span

@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Search, Star } from "lucide-react";
+import { useNavigate } from "react-router";
+import { LogOut, Search, Star } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { authService, feedbackService, skillService, userSkillService } from "@/lib/services";
 import type { Feedback, Skill, UserSkill } from "@/lib/types";
 
 export default function profiloPersonale() {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isModified, setIsModified] = useState(false);
   const [showAddPopup, setShowAddPopup] = useState(false);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -45,6 +47,11 @@ export default function profiloPersonale() {
     s.skill_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
   const [filterType, setFilterType] = useState<"tutti" | "offered" | "wanted">("tutti");
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   const handleSaveProfile = async () => {
     if (!user?.id) return;
@@ -109,9 +116,12 @@ export default function profiloPersonale() {
               {isModified ? (
                 <button onClick={handleSaveProfile} className="mt-5 w-full bg-orange-500 text-black py-3 rounded-2xl font-bold hover:bg-orange-600 transition-all">Salva Profilo</button>
               ) : (
-                <button onClick={() => window.history.back()} className="mt-5 w-full flex items-center justify-center gap-2 bg-black text-orange-500 border-2 border-orange-500 py-3 rounded-2xl font-bold hover:bg-orange-500 hover:text-black transition-all">Indietro</button>
-              )}
-            </div>
+      <button onClick={() => window.history.back()} className="mt-5 w-full flex items-center justify-center gap-2 bg-black text-orange-500 border-2 border-orange-500 py-3 rounded-2xl font-bold hover:bg-orange-500 hover:text-black transition-all">Indietro</button>
+            )}
+              <button onClick={handleLogout} className="mt-3 w-full flex items-center justify-center gap-2 border border-red-500/40 bg-red-500/10 text-red-400 py-3 rounded-2xl font-bold hover:bg-red-500/20 transition-all">
+                <LogOut size={18} /> Esci
+              </button>
+          </div>
           </div>
 
           <div className="lg:col-span-2 space-y-4">

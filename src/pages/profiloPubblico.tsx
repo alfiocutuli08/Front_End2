@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, MapPin, Search, Star } from "lucide-react";
-import { feedbackService, userService, requestService } from "@/lib/services";
+import { ArrowLeft, Ban, Flag, MapPin, Search, Star } from "lucide-react";
+import { blockService, feedbackService, reportService, requestService, userService } from "@/lib/services";
 import type { User, Feedback, UserSkill } from "@/lib/types";
 
 export default function ProfiloPubblico() {
@@ -14,6 +14,9 @@ export default function ProfiloPubblico() {
   const [avgRating, setAvgRating] = useState<string | null>(null);
   const [offeredSkills, setOfferedSkills] = useState<UserSkill[]>([]);
   const [wantedSkills, setWantedSkills] = useState<UserSkill[]>([]);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [showReportPopup, setShowReportPopup] = useState(false);
+  const [reportReason, setReportReason] = useState("");
 
   const userId = Number(new URLSearchParams(window.location.search).get("id")) || 1;
 
@@ -48,6 +51,34 @@ export default function ProfiloPubblico() {
     }
   };
 
+  const handleBlock = async () => {
+    try {
+      if (isBlocked) {
+        await blockService.unblockUser(userId);
+        setIsBlocked(false);
+        setPopupMsg("Utente sbloccato ✅");
+      } else {
+        await blockService.blockUser(userId);
+        setIsBlocked(true);
+        setPopupMsg("Utente bloccato ✅");
+      }
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 2500);
+    } catch {}
+  };
+
+  const handleReport = async () => {
+    if (!reportReason.trim()) return;
+    try {
+      await reportService.reportUser(userId, reportReason);
+      setShowReportPopup(false);
+      setReportReason("");
+      setPopupMsg("Segnalazione inviata con successo ✅");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 2500);
+    } catch {}
+  };
+
   const skillsOfferte = offeredSkills;
   const skillsCercate = wantedSkills;
   const livello = profile ? "Intermedio" : "Intermedio";
@@ -77,6 +108,12 @@ export default function ProfiloPubblico() {
             <div className="flex gap-2 items-start">
               <button onClick={handleRequestClick} className={`px-4 py-2 text-sm rounded-lg transition ${status === "idle" ? "bg-orange-500 hover:bg-orange-600 text-white" : status === "pending" ? "bg-yellow-600 hover:bg-yellow-700 text-white" : status === "accepted" ? "bg-green-600 hover:bg-green-700 text-white" : status === "declined" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-red-600 border border-red-500 text-white cursor-not-allowed"}`}>
                 {status === "idle" ? "Invia richiesta" : status === "pending" ? "In attesa di risposta..." : status === "accepted" ? "Richiesta accettata ✅" : status === "declined" ? "Richiesta declinata ❌" : "🚫 Utente bloccato"}
+              </button>
+              <button onClick={handleBlock} className={`px-3 py-2 text-sm rounded-lg transition flex items-center gap-1.5 ${isBlocked ? "bg-zinc-700 text-zinc-400 cursor-not-allowed" : "bg-red-500/10 border border-red-500/40 text-red-400 hover:bg-red-500/20"}`}>
+                <Ban size={14} /> {isBlocked ? "Bloccato" : "Blocca"}
+              </button>
+              <button onClick={() => setShowReportPopup(true)} className="px-3 py-2 text-sm rounded-lg transition flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/20">
+                <Flag size={14} /> Segnala
               </button>
             </div>
           </div>
@@ -192,6 +229,29 @@ export default function ProfiloPubblico() {
                 {skillsCercate.map((s, i) => (
                   <span key={i} className="bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-sm">{s.skill_name}</span>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showReportPopup && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
+            <div className="bg-zinc-900 border border-orange-500 rounded-2xl shadow-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Segnala utente</h3>
+              <textarea
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                placeholder="Descrivi il motivo della segnalazione..."
+                rows={4}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-white text-sm outline-none focus:border-orange-500 resize-none mb-4"
+              />
+              <div className="flex gap-3">
+                <button onClick={handleReport} disabled={!reportReason.trim()} className={`flex-1 py-2.5 rounded-xl font-bold transition ${reportReason.trim() ? "bg-orange-500 text-black hover:bg-orange-600" : "bg-zinc-700 text-zinc-500 cursor-not-allowed"}`}>
+                  Invia segnalazione
+                </button>
+                <button onClick={() => { setShowReportPopup(false); setReportReason(""); }} className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-white font-bold hover:bg-zinc-700 transition">
+                  Annulla
+                </button>
               </div>
             </div>
           </div>
