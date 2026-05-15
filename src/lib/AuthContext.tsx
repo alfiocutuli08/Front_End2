@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { authService, isLoggedIn, removeUserId, saveUserId } from "./services";
+import { authService, isLoggedIn, removeToken } from "./services";
 import type { User } from "./types";
 
 type AuthContextType = {
   user: User | null;
   loading: boolean;
-  login: (user: User) => Promise<void>;
+  login: (user: User) => void;
   logout: () => void;
   refresh: () => Promise<void>;
 };
@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data } = await authService.me();
       setUser(data);
     } catch {
-      removeUserId();
+      removeToken();
       setUser(null);
     } finally {
       setLoading(false);
@@ -37,13 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refresh();
   }, []);
 
-  const login = async (userData: User) => {
-    saveUserId(userData.id);
+  const login = (userData: User) => {
     setUser(userData);
   };
 
   const logout = () => {
-    removeUserId();
+    removeToken();
     setUser(null);
   };
 

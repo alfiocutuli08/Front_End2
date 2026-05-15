@@ -13,7 +13,7 @@ export type UserSkill = {
   id: number
   user_id: number
   skill_id: number
-  category: "offer" | "search"
+  type: "offered" | "wanted"
   level: string
   skill_name: string
 }
@@ -40,7 +40,7 @@ export type UserUpdate = {
 export type Skill = {
   id: number
   name: string
-  category?: "offer" | "search"
+  description?: string
 }
 
 export type UserProfile = User
@@ -48,41 +48,54 @@ export type UserProfile = User
 export type Match = {
   id: number
   name: string
-  email: string
+  email?: string
   location?: string
   level?: string
   rating?: number
   image_url?: string
   offerte: string[]
   cercate: string[]
+  is_match?: boolean
 }
 
 export type Stats = {
-  utenti_attivi: number
-  sessioni_completate: number
-  skill_disponibili: number
-  rating_medio: number
+  total_users: number
+  total_skills: number
+  total_matches: number
 }
 
-export type RequestStatus = "pending" | "accepted" | "declined" | "completed"
+export type RequestStatus = "pending" | "accepted" | "rejected" | "completed" | "cancelled"
 
 export type Request = {
   id: number
-  from_user_id: number
-  to_user_id: number
+  sender_id: number
+  receiver_id: number
+  sender_name: string
+  receiver_name: string
+  skill_id: number
+  skill_name: string
   status: RequestStatus
+  message?: string
+  mode?: string
+  sender_confirmed: boolean
+  receiver_confirmed: boolean
   created_at: string
-  from_user_name?: string
-  to_user_name?: string
+  updated_at?: string
 }
 
 export type Feedback = {
   id: number
-  from_user_id: number
-  to_user_id: number
-  request_id: number
+  session_request_id: number
+  reviewer_id: number
+  reviewer_name: string
   rating: number
   comment: string | null
   created_at: string
-  from_user_name?: string
+}
+
+export type TokenData = {
+  access_token: string
+  token_type: string
+  user_id: number
+  name: string
 }

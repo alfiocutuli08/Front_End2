@@ -1,178 +1,159 @@
 import { api } from "./api";
-import type { User, UserCreate, UserLogin, UserUpdate, Skill, UserSkill, Match, Stats, Request, Feedback } from "./types";
+import type { User, UserCreate, UserLogin, UserUpdate, Skill, UserSkill, Match, Stats, Request, Feedback, TokenData } from "./types";
 
-// ── GESTIONE UTENTE LOGGATO ──
+export function getToken(): string | null {
+  return localStorage.getItem("auth_token");
+}
+
+export function saveToken(data: TokenData) {
+  localStorage.setItem("auth_token", data.access_token);
+  localStorage.setItem("user_id", String(data.user_id));
+  localStorage.setItem("user_name", data.name);
+}
+
+export function removeToken() {
+  localStorage.removeItem("auth_token");
+  localStorage.removeItem("user_id");
+  localStorage.removeItem("user_name");
+}
+
+export function isLoggedIn(): boolean {
+  return !!localStorage.getItem("auth_token");
+}
 
 export function getUserId(): number | null {
   const id = localStorage.getItem("user_id");
   return id ? Number(id) : null;
 }
 
-export function saveUserId(id: number) {
-  localStorage.setItem("user_id", String(id));
-}
-
-export function removeUserId() {
-  localStorage.removeItem("user_id");
-}
-
-export function isLoggedIn(): boolean {
-  return !!localStorage.getItem("user_id");
-}
-
-// ── AUTH ──
-
 export const authService = {
   register(payload: UserCreate) {
-    return api.post<User>("/auth/register", payload);
+    return api.post<TokenData>("/auth/register", payload);
   },
 
   login(payload: UserLogin) {
-    return api.post<User>("/auth/login", payload);
+    return api.post<TokenData>("/auth/login", payload);
   },
 
   me() {
-    const uid = getUserId();
-    return api.get<User>("/auth/me", { params: { user_id: uid } });
+    return api.get<User>("/auth/me");
+  },
+
+  updateProfile(data: UserUpdate) {
+    return api.put<User>("/auth/profile", data);
   },
 };
-
-// ── UTENTI ──
 
 export const userService = {
-  getProfile(userId: number) {
-    return api.get<User>(`/users/${userId}`);
-  },
-
   getPublicProfile(userId: number) {
-    return api.get<User>(`/users/${userId}`);
+    return api.get<User>(`/users/public/${userId}`);
   },
 
-  updateProfile(userId: number, data: UserUpdate) {
-    return api.put<User>(`/users/${userId}`, data);
+  getUserSkills(userId: number) {
+    return api.get<{ offered_skills: UserSkill[]; wanted_skills: UserSkill[] }>(`/users/${userId}/skills`);
   },
 };
-
-// ── SKILL GLOBALI ──
 
 export const skillService = {
   list() {
-    return api.get<Skill[]>("/skills");
+    return api.get<Skill[]>("/skills/");
   },
 
   create(name: string) {
-    return api.post<Skill>("/skills", { name });
+    return api.post<Skill>("/skills/", { name, description: "" });
   },
 };
-
-// ── SKILL UTENTE ──
 
 export const userSkillService = {
-  getUserSkills(userId: number) {
-    return api.get<UserSkill[]>(`/users/${userId}/skills`);
+  getMySkills() {
+    return api.get<UserSkill[]>("/skills/my");
   },
 
-  addSkill(userId: number, payload: { skill_id: number; category: string; level: string }) {
-    return api.post<UserSkill>(`/users/${userId}/skills`, payload);
+  addSkill(payload: { skill_name: string; level: string; type: string }) {
+    return api.post<UserSkill>("/skills/my", payload);
   },
 
-  removeSkill(userId: number, usId: number) {
-    return api.delete(`/users/${userId}/skills/${usId}`);
+  updateSkill(id: number, payload: { skill_name: string; level: string; type: string }) {
+    return api.put<UserSkill>(`/skills/my/${id}`, payload);
+  },
+
+  removeSkill(id: number) {
+    return api.delete(`/skills/my/${id}`);
   },
 };
-
-// ── RICERCA ──
 
 export const searchService = {
   searchUsers(query: string) {
-    return api.get<Match[]>("/users/search", { params: { q: query } });
+    return api.get<Match[]>("/users/search", { params: { q: query, limit: 50 } });
   },
 
   getMatches() {
-    return api.get<Match[]>("/users/matches");
+    return api.get<Match[]>("/users/search", { params: { limit: 50 } });
   },
 };
 
-// ── RICHIESTE ──
-
 export const requestService = {
-  sendRequest(toUserId: number) {
-    const uid = getUserId();
-    return api.post<Request>("/requests", { to_user_id: toUserId }, { params: { from_user_id: uid } });
+  sendRequest(payload: { receiver_id: number; skill_id: number; message?: string; mode?: string }) {
+    return api.post<Request>("/requests/", payload);
   },
 
   acceptRequest(requestId: number) {
-    const uid = getUserId();
-    return api.put<Request>(`/requests/${requestId}/accept`, null, { params: { user_id: uid } });
+    return api.patch<Request>(`/requests/${requestId}`, { action: "accept" });
   },
 
   declineRequest(requestId: number) {
-    const uid = getUserId();
-    return api.put<Request>(`/requests/${requestId}/decline`, null, { params: { user_id: uid } });
+    return api.patch<Request>(`/requests/${requestId}`, { action: "reject" });
   },
 
   completeRequest(requestId: number) {
-    const uid = getUserId();
-    return api.put<Request>(`/requests/${requestId}/complete`, null, { params: { user_id: uid } });
+    return api.patch<Request>(`/requests/${requestId}`, { action: "confirm_completion" });
   },
 
   cancelRequest(requestId: number) {
-    const uid = getUserId();
-    return api.delete(`/requests/${requestId}`, { params: { user_id: uid } });
+    return api.patch<Request>(`/requests/${requestId}`, { action: "cancel" });
   },
 
-  getMyRequests() {
-    const uid = getUserId();
-    return api.get<Request[]>("/requests/mine", { params: { user_id: uid } });
+  getMyRequests(tab: string = "all") {
+    return api.get<{ requests: Request[]; pending_count: number }>("/requests/", { params: { tab } });
   },
 
   getPendingRequests() {
-    const uid = getUserId();
-    return api.get<Request[]>("/requests/pending", { params: { user_id: uid } });
+    return api.get<{ requests: Request[]; pending_count: number }>("/requests/", { params: { tab: "received" } });
   },
 };
-
-// ── STATS ──
 
 export const statsService = {
   getHomeStats() {
-    return api.get<Stats>("/stats/home");
+    return api.get<Stats>("/users/stats");
   },
 };
 
-// ── FEEDBACK ──
-
 export const reportService = {
   reportUser(userId: number, reason: string) {
-    const uid = getUserId();
-    return api.post("/reports", { user_id: userId, reason }, { params: { from_user_id: uid } });
+    return api.post("/reports", { user_id: userId, reason });
   },
 };
 
 export const blockService = {
   blockUser(userId: number) {
-    const uid = getUserId();
-    return api.post("/blocks", { blocked_user_id: userId }, { params: { user_id: uid } });
+    return api.post("/blocks", { blocked_user_id: userId });
   },
 
   unblockUser(userId: number) {
-    const uid = getUserId();
-    return api.delete(`/blocks/${userId}`, { params: { user_id: uid } });
+    return api.delete(`/blocks/${userId}`);
   },
 
   getBlockedUsers() {
-    const uid = getUserId();
-    return api.get<number[]>("/blocks/mine", { params: { user_id: uid } });
+    return api.get<number[]>("/blocks/mine");
   },
 };
 
 export const feedbackService = {
-  submitFeedback(payload: { to_user_id: number; request_id: number; rating: number; comment: string }) {
-    const uid = getUserId();
-    return api.post<Feedback>("/feedback", payload, { params: { from_user_id: uid } });
+  submitFeedback(payload: { session_request_id: number; rating: number; comment?: string }) {
+    return api.post<Feedback>("/feedback/", payload);
   },
 
   getUserFeedback(userId: number) {
-    return api.get<Feedback[]>(`/users/${userId}/feedback`);
+    return api.get<{ feedback: Feedback[]; average_rating: number | null; total_feedback: number }>(`/feedback/user/${userId}`);
   },
 };

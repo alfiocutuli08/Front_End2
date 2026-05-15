@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
-import { ArrowRight, LockKeyhole, Mail } from "lucide-react";
+import { ArrowRight, LockKeyhole, Mail, Eye, EyeOff } from "lucide-react";
 import { AuthLayout } from "@/components/AuthLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { authService } from "@/lib/services";
+import { authService, saveToken } from "@/lib/services";
 import { useAuth } from "@/lib/AuthContext";
 
 export function LoginPage() {
@@ -19,6 +19,7 @@ export function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +30,9 @@ export function LoginPage() {
 
     try {
       const { data } = await authService.login({ email, password });
-      await login(data);
+      saveToken(data);
+      const me = await authService.me();
+      login(me.data);
       navigate("/profile");
     } catch {
       setMessage("Credenziali non valide o backend non avviato.");
@@ -49,7 +52,7 @@ export function LoginPage() {
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <label className="block text-sm font-medium text-zinc-100">
+            <label className="block text-sm font-medium text-white">
               Email
               <div className="relative mt-2">
                 <Mail className="pointer-events-none absolute left-3 top-2.5 h-5 w-5 text-orange-500" />
@@ -63,18 +66,26 @@ export function LoginPage() {
                 />
               </div>
             </label>
-            <label className="block text-sm font-medium text-zinc-100">
+            <label className="block text-sm font-medium text-white">
               Password
               <div className="relative mt-2">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-2.5 h-5 w-5 text-orange-500" />
                 <Input
-                  className="border-orange-500/70 bg-black pl-10 text-white placeholder:text-zinc-500 focus-visible:ring-orange-500"
-                  type="password"
+                  className="border-orange-500/70 bg-black px-10 text-white placeholder:text-zinc-500 focus-visible:ring-orange-500"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="La tua password"
                   required
                 />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Nascondi password" : "Mostra password"}
+                  className="absolute right-3 top-2.5 text-orange-400 transition-colors hover:text-orange-300"
+                  onClick={() => setShowPassword((value) => !value)}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
               </div>
             </label>
             {message && <p className="text-sm text-orange-300">{message}</p>}
