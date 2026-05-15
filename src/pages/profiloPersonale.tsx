@@ -116,7 +116,7 @@ export default function profiloPersonale() {
               {isModified ? (
                 <button onClick={handleSaveProfile} className="mt-5 w-full bg-orange-500 text-black py-3 rounded-2xl font-bold hover:bg-orange-600 transition-all">Salva Profilo</button>
               ) : (
-      <button onClick={() => window.history.back()} className="mt-5 w-full flex items-center justify-center gap-2 bg-black text-orange-500 border-2 border-orange-500 py-3 rounded-2xl font-bold hover:bg-orange-500 hover:text-black transition-all">Indietro</button>
+      <button onClick={() => navigate("/")} className="mt-5 w-full flex items-center justify-center gap-2 bg-black text-orange-500 border-2 border-orange-500 py-3 rounded-2xl font-bold hover:bg-orange-500 hover:text-black transition-all">Indietro</button>
             )}
               <button onClick={handleLogout} className="mt-3 w-full flex items-center justify-center gap-2 border border-red-500/40 bg-red-500/10 text-red-400 py-3 rounded-2xl font-bold hover:bg-red-500/20 transition-all">
                 <LogOut size={18} /> Esci
