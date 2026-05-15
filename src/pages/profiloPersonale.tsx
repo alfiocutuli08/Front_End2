@@ -91,7 +91,7 @@ export default function profiloPersonale() {
               <div className="w-32 h-32 rounded-full bg-zinc-900 flex items-center justify-center overflow-hidden border-4 border-orange-500">
                 <img src={user?.image_url || "https://cdn.phototourl.com/free/2026-05-12-bac6185b-c4fb-44db-bc6e-99673f2d71cd.jpg"} alt="profile" className="w-full h-full object-cover" />
               </div>
-              <h1 className="text-3xl font-semibold mt-4">{user?.name ?? "Username"}</h1>
+              <h1 className="text-3xl font-semibold mt-4 text-white">{user?.name ?? "Username"}</h1>
 
               <input value={location} onChange={(e) => { setLocation(e.target.value); setIsModified(true); }} placeholder="Inserisci la tua città" className="mt-2 w-full bg-black border border-orange-500/30 rounded-xl px-3 py-2 text-white text-sm text-center outline-none focus:border-orange-500 placeholder:text-orange-500/30" />
               <select value={level} onChange={(e) => { setLevel(e.target.value); setIsModified(true); }} className="mt-2 w-full bg-black border border-orange-500/30 rounded-xl px-3 py-2 text-white text-sm text-center outline-none focus:border-orange-500">
