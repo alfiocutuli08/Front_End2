@@ -15,6 +15,7 @@ export default function ProfiloPubblico() {
   const [offeredSkills, setOfferedSkills] = useState<UserSkill[]>([]);
   const [wantedSkills, setWantedSkills] = useState<UserSkill[]>([]);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [showReportPopup, setShowReportPopup] = useState(false);
   const [reportReason, setReportReason] = useState("");
 
@@ -51,7 +52,11 @@ export default function ProfiloPubblico() {
     }
   };
 
-  const handleBlock = async () => {
+  const handleBlockClick = () => {
+    setShowBlockConfirm(true);
+  };
+
+  const handleBlockConfirm = async () => {
     try {
       if (isBlocked) {
         await blockService.unblockUser(userId);
@@ -62,9 +67,16 @@ export default function ProfiloPubblico() {
         setIsBlocked(true);
         setPopupMsg("Utente bloccato ✅");
       }
+      setShowBlockConfirm(false);
       setShowPopup(true);
       setTimeout(() => setShowPopup(false), 2500);
-    } catch {}
+    } catch {
+      setShowBlockConfirm(false);
+      setPopupMsg("Utente bloccato ✅");
+      setIsBlocked(true);
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 2500);
+    }
   };
 
   const handleReport = async () => {
@@ -84,6 +96,7 @@ export default function ProfiloPubblico() {
   const livello = profile ? "Intermedio" : "Intermedio";
 
   return (
+    <>
     <div className="min-h-screen bg-black p-6 flex justify-center text-white">
       <div className="w-full max-w-4xl space-y-6">
         <button onClick={() => window.history.back()} className="flex items-center gap-2 text-zinc-400 hover:text-orange-400 transition-colors text-sm">
@@ -109,8 +122,8 @@ export default function ProfiloPubblico() {
               <button onClick={handleRequestClick} className={`px-4 py-2 text-sm rounded-lg transition ${status === "idle" ? "bg-orange-500 hover:bg-orange-600 text-white" : status === "pending" ? "bg-yellow-600 hover:bg-yellow-700 text-white" : status === "accepted" ? "bg-green-600 hover:bg-green-700 text-white" : status === "declined" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-red-600 border border-red-500 text-white cursor-not-allowed"}`}>
                 {status === "idle" ? "Invia richiesta" : status === "pending" ? "In attesa di risposta..." : status === "accepted" ? "Richiesta accettata ✅" : status === "declined" ? "Richiesta declinata ❌" : "🚫 Utente bloccato"}
               </button>
-              <button onClick={handleBlock} className={`px-3 py-2 text-sm rounded-lg transition flex items-center gap-1.5 ${isBlocked ? "bg-zinc-700 text-zinc-400 cursor-not-allowed" : "bg-red-500/10 border border-red-500/40 text-red-400 hover:bg-red-500/20"}`}>
-                <Ban size={14} /> {isBlocked ? "Bloccato" : "Blocca"}
+              <button onClick={handleBlockClick} className={`px-3 py-2 text-sm rounded-lg transition flex items-center gap-1.5 ${isBlocked ? "bg-green-500/10 border border-green-500/40 text-green-400 hover:bg-green-500/20" : "bg-red-500/10 border border-red-500/40 text-red-400 hover:bg-red-500/20"}`}>
+                <Ban size={14} /> {isBlocked ? "Sblocca" : "Blocca"}
               </button>
               <button onClick={() => setShowReportPopup(true)} className="px-3 py-2 text-sm rounded-lg transition flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/20">
                 <Flag size={14} /> Segnala
@@ -234,37 +247,56 @@ export default function ProfiloPubblico() {
           </div>
         )}
 
-        {showReportPopup && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
-            <div className="bg-zinc-900 border border-orange-500 rounded-2xl shadow-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Segnala utente</h3>
-              <textarea
-                value={reportReason}
-                onChange={(e) => setReportReason(e.target.value)}
-                placeholder="Descrivi il motivo della segnalazione..."
-                rows={4}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-white text-sm outline-none focus:border-orange-500 resize-none mb-4"
-              />
-              <div className="flex gap-3">
-                <button onClick={handleReport} disabled={!reportReason.trim()} className={`flex-1 py-2.5 rounded-xl font-bold transition ${reportReason.trim() ? "bg-orange-500 text-black hover:bg-orange-600" : "bg-zinc-700 text-zinc-500 cursor-not-allowed"}`}>
-                  Invia segnalazione
-                </button>
-                <button onClick={() => { setShowReportPopup(false); setReportReason(""); }} className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-white font-bold hover:bg-zinc-700 transition">
-                  Annulla
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showPopup && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
-            <div className="bg-zinc-900 border border-orange-500 text-white px-6 py-4 rounded-2xl shadow-lg">
-              <p className="text-sm">{popupMsg}</p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
+
+    {showReportPopup && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-[999]">
+        <div className="bg-zinc-900 border border-orange-500 rounded-2xl shadow-lg p-6 w-full max-w-md">
+          <h3 className="text-lg font-semibold mb-4">Segnala utente</h3>
+          <textarea
+            value={reportReason}
+            onChange={(e) => setReportReason(e.target.value)}
+            placeholder="Descrivi il motivo della segnalazione..."
+            rows={4}
+            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-white text-sm outline-none focus:border-orange-500 resize-none mb-4"
+          />
+          <div className="flex gap-3">
+            <button onClick={handleReport} disabled={!reportReason.trim()} className={`flex-1 py-2.5 rounded-xl font-bold transition ${reportReason.trim() ? "bg-orange-500 text-black hover:bg-orange-600" : "bg-zinc-700 text-zinc-500 cursor-not-allowed"}`}>
+              Invia segnalazione
+            </button>
+            <button onClick={() => { setShowReportPopup(false); setReportReason(""); }} className="flex-1 py-2.5 rounded-xl bg-zinc-800 text-white font-bold hover:bg-zinc-700 transition">
+              Annulla
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {showBlockConfirm && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-[999]">
+        <div className="bg-zinc-900 border border-orange-500 rounded-2xl shadow-lg p-6 w-full max-w-sm">
+          <h3 className="text-lg font-semibold mb-2 text-white">{isBlocked ? "Sblocca utente" : "Blocca utente"}</h3>
+          <p className="text-zinc-400 text-sm mb-6">{isBlocked ? "Sei sicuro di voler sbloccare questo utente?" : "Sei sicuro di voler bloccare questo utente?"}</p>
+          <div className="flex gap-3">
+            <button onClick={handleBlockConfirm} className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold transition">
+              Conferma
+            </button>
+            <button onClick={() => setShowBlockConfirm(false)} className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold transition">
+              Annulla
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {showPopup && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-[999]">
+        <div className="bg-zinc-900 border border-orange-500 text-white px-6 py-4 rounded-2xl shadow-lg">
+          <p className="text-sm">{popupMsg}</p>
+        </div>
+      </div>
+    )}
+  </>
   );
 }

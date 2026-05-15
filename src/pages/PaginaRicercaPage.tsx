@@ -6,12 +6,13 @@ import {
   MapPin,
   Search,
   Settings,
+  Star,
   User,
   Wrench,
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useAuth } from "@/lib/AuthContext";
-import { searchService } from "@/lib/services";
+import { feedbackService, requestService, searchService } from "@/lib/services";
 import type { Match } from "@/lib/types";
 
 const fallbackProfiles: (Match & { description?: string })[] = [
@@ -45,6 +46,12 @@ export function PaginaRicercaPage() {
   const [levelFilter, setLevelFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [profiles, setProfiles] = useState<(Match & { level?: string; description?: string })[]>(fallbackProfiles);
+  const [feedbackTarget, setFeedbackTarget] = useState<(Match & { level?: string; description?: string }) | null>(null);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState("");
+  const [feedbackHover, setFeedbackHover] = useState(0);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState("");
 
   useEffect(() => {
     searchService.getMatches()
@@ -87,6 +94,38 @@ export function PaginaRicercaPage() {
     if (!showOfferedSkills && showSoughtSkills) return matchesSearch && matchesSoughtSkills;
     return matchesSearch;
   });
+
+  const handleSubmitFeedback = async () => {
+    if (!feedbackTarget || feedbackRating === 0) return;
+    setFeedbackSubmitting(true);
+    setFeedbackMsg("");
+    try {
+      const { data } = await requestService.getMyRequests("sent");
+      const completed = data.requests.find(
+        (r) => r.receiver_id === feedbackTarget.id && r.status === "completed"
+      );
+      if (!completed) {
+        setFeedbackMsg("Nessuna richiesta completata con questo utente.");
+        setFeedbackSubmitting(false);
+        return;
+      }
+      await feedbackService.submitFeedback({
+        session_request_id: completed.id,
+        rating: feedbackRating,
+        comment: feedbackComment || undefined,
+      });
+      setFeedbackMsg("Feedback inviato con successo ✅");
+      setTimeout(() => {
+        setFeedbackTarget(null);
+        setFeedbackRating(0);
+        setFeedbackComment("");
+        setFeedbackMsg("");
+      }, 2000);
+    } catch {
+      setFeedbackMsg("Errore nell'invio del feedback.");
+    }
+    setFeedbackSubmitting(false);
+  };
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.12),_transparent_25%),linear-gradient(180deg,_#090909_0%,_#050505_100%)] px-3 py-3 sm:px-5 sm:py-5">
@@ -205,7 +244,10 @@ export function PaginaRicercaPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center justify-end gap-2">
+                    <button onClick={() => { setFeedbackTarget(profile); setFeedbackRating(0); setFeedbackComment(""); setFeedbackMsg(""); }} type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-400 transition-colors hover:border-yellow-500/35 hover:text-yellow-400" title="Lascia feedback">
+                      <Star className="h-4 w-4" />
+                    </button>
                     <button onClick={() => navigate("/card", { state: { profile } })} type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-400 transition-colors hover:border-orange-500/35 hover:text-orange-300">
                       <ChevronRight className="h-5 w-5" />
                     </button>
@@ -216,6 +258,37 @@ export function PaginaRicercaPage() {
           </div>
         </section>
       </div>
+      {feedbackTarget && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-[#121316] border border-orange-500/40 rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl">
+            <h3 className="text-2xl font-bold mb-1 text-white">Lascia un feedback</h3>
+            <p className="text-zinc-400 text-sm mb-6">Valuta la tua esperienza con {feedbackTarget.name}.</p>
+
+            <div className="flex justify-center gap-2 mb-6">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => setFeedbackRating(star)} onMouseEnter={() => setFeedbackHover(star)} onMouseLeave={() => setFeedbackHover(0)} className="transition-transform hover:scale-110">
+                  <Star size={36} className={star <= (feedbackHover || feedbackRating) ? "fill-yellow-400 text-yellow-400" : "text-zinc-600"} />
+                </button>
+              ))}
+            </div>
+
+            <textarea value={feedbackComment} onChange={(e) => setFeedbackComment(e.target.value)} placeholder="Scrivi un commento (opzionale)..." rows={3} className="w-full bg-zinc-800 border border-zinc-700 rounded-2xl p-4 text-white text-sm outline-none focus:border-orange-500 resize-none mb-4" />
+
+            {feedbackMsg && (
+              <p className={`text-sm text-center mb-4 ${feedbackMsg.includes("✅") ? "text-green-400" : "text-red-400"}`}>{feedbackMsg}</p>
+            )}
+
+            <div className="flex gap-4">
+              <button onClick={handleSubmitFeedback} disabled={feedbackRating === 0 || feedbackSubmitting} className={`flex-1 py-3 rounded-2xl font-bold transition ${feedbackRating === 0 ? "bg-zinc-700 text-zinc-500 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600 text-black"}`}>
+                {feedbackSubmitting ? "Invio..." : "Invia feedback"}
+              </button>
+              <button onClick={() => { setFeedbackTarget(null); setFeedbackRating(0); setFeedbackComment(""); setFeedbackMsg(""); }} className="flex-1 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold transition">
+                Annulla
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
